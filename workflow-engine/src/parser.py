@@ -29,6 +29,9 @@ from lxml import etree
 from src.logger import get_logger
 from src.result import Fail, Ok, Result
 
+# noinspection PyProtectedMember
+_XmlElement = etree._Element
+
 log = get_logger(__name__)
 
 
@@ -74,14 +77,14 @@ class ParsedDocument:
     annexes: list[Annex] = field(default_factory=list)
 
 
-def _text(element: etree._Element | None) -> str:
+def _text(element: _XmlElement | None) -> str:
     """Extract all text content from an element, stripping whitespace."""
     if element is None:
         return ""
     return (etree.tostring(element, method="text", encoding="unicode") or "").strip()
 
 
-def _element_to_text(element: etree._Element) -> str:
+def _element_to_text(element: _XmlElement) -> str:
     """Convert an element and its children to plain text, preserving structure."""
     parts: list[str] = []
 
@@ -112,7 +115,7 @@ def _element_to_text(element: etree._Element) -> str:
     return "\n\n".join(p for p in parts if p)
 
 
-def _parse_list(list_el: etree._Element) -> str:
+def _parse_list(list_el: _XmlElement) -> str:
     """Parse a LIST element into formatted text."""
     items: list[str] = []
     for item_el in list_el.findall("ITEM"):
@@ -126,71 +129,74 @@ def _parse_list(list_el: etree._Element) -> str:
     return "\n\n".join(items)
 
 
-def _parse_paragraph(parag: etree._Element) -> Paragraph:
+def _parse_paragraph(parag: _XmlElement) -> Paragraph:
     """Parse a PARAG element."""
     no = _text(parag.find("NO.PARAG")).rstrip(".")
-    alinea = parag.find("ALINEA")
 
     items: list[Item] = []
     text_parts: list[str] = []
 
-    if alinea is not None:
-        # ALINEA can contain plain text, P elements, or LIST
-        for child in alinea:
-            tag = child.tag if isinstance(child.tag, str) else ""
-            if tag == "P":
-                text_parts.append(_text(child))
-            elif tag == "LIST":
-                for item_el in child.findall("ITEM"):
-                    np = item_el.find("NP")
-                    if np is not None:
-                        letter = _text(np.find("NO.P")).strip("()")
-                        txt = _text(np.find("TXT"))
-                        items.append(Item(letter=letter, text=txt))
-                    else:
-                        items.append(Item(letter="", text=_text(item_el)))
-            elif tag == "NP":
-                pass  # Already captured via NO.PARAG
-            elif tag == "NOTE":
-                pass  # Skip footnotes
-            else:
-                t = _text(child)
-                if t:
-                    text_parts.append(t)
+    alineas = parag.findall("ALINEA")
 
-        if alinea.text and alinea.text.strip():
-            text_parts.insert(0, alinea.text.strip())
+    if alineas:
+        for alinea in alineas:
+            if alinea.text and alinea.text.strip():
+                text_parts.append(alinea.text.strip())
+
+            for child in alinea:
+                tag = child.tag if isinstance(child.tag, str) else ""
+                if tag == "P":
+                    text_parts.append(_text(child))
+                elif tag == "LIST":
+                    for item_el in child.findall("ITEM"):
+                        np = item_el.find("NP")
+                        if np is not None:
+                            letter = _text(np.find("NO.P")).strip("()")
+                            txt = _text(np.find("TXT"))
+                            items.append(Item(letter=letter, text=txt))
+                        else:
+                            items.append(Item(letter="", text=_text(item_el)))
+                elif tag == "NP":
+                    pass
+                elif tag == "NOTE":
+                    pass
+                else:
+                    t = _text(child)
+                    if t:
+                        text_parts.append(t)
     else:
         text_parts.append(_text(parag))
 
     return Paragraph(number=no, text="\n\n".join(text_parts), items=items)
 
 
-def parse_articles(root: etree._Element) -> list[Article]:
+def _find_chapter_context(element: _XmlElement) -> tuple[str, str]:
+    """Walk up DIVISION ancestors to find the nearest CHAPTER-level title.
+
+    Formex hierarchy: TITLE > CHAPTER > SECTION > ARTICLE
+    We want the CHAPTER level, not the SECTION level.
+    """
+    current = element
+    while current is not None:
+        if current.tag == "DIVISION":
+            ti = _text(current.find("TITLE/TI"))
+            if ti and ("CHAPTER" in ti.upper() or "TITLE" in ti.upper()):
+                sti = _text(current.find("TITLE/STI"))
+                return ti, sti
+        current = current.getparent()
+    return "", ""
+
+
+def parse_articles(root: _XmlElement) -> list[Article]:
     """Parse all ARTICLE elements from the ACT."""
     articles: list[Article] = []
-
-    # Build division context map
-    div_map: dict[str, tuple[str, str]] = {}
-    for div in root.iter("DIVISION"):
-        ti = _text(div.find("TITLE/TI"))
-        sti = _text(div.find("TITLE/STI"))
-        for art in div.findall("ARTICLE"):
-            ident = art.get("IDENTIFIER", "")
-            # Use the closest chapter (not section)
-            parent = div.getparent()
-            if parent is not None and parent.tag == "DIVISION":
-                p_ti = _text(parent.find("TITLE/TI"))
-                p_sti = _text(parent.find("TITLE/STI"))
-                div_map[ident] = (p_ti, p_sti)
-            else:
-                div_map[ident] = (ti, sti)
 
     for art_el in root.iter("ARTICLE"):
         number = _text(art_el.find("TI.ART")).replace("Article", "").strip()
         title = _text(art_el.find("STI.ART"))
-        ident = art_el.get("IDENTIFIER", "")
-        chapter, chapter_title = div_map.get(ident, ("", ""))
+
+        parent_div = art_el.getparent()
+        chapter, chapter_title = _find_chapter_context(parent_div)
 
         paragraphs = [_parse_paragraph(p) for p in art_el.findall("PARAG")]
 
@@ -206,7 +212,7 @@ def parse_articles(root: etree._Element) -> list[Article]:
     return articles
 
 
-def parse_recitals(root: etree._Element) -> list[Recital]:
+def parse_recitals(root: _XmlElement) -> list[Recital]:
     """Parse all CONSID elements from the PREAMBLE."""
     recitals: list[Recital] = []
 

@@ -49,6 +49,7 @@ sparql:
 
     ## ── Step 1: Discovery ────────────────────────────────────
     - name: discover
+      required: false
       description: "Discover available CDM properties"
       template: |
         PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
@@ -70,6 +71,7 @@ sparql:
     ##   Item → manifestationMimeType, stream_name
     ##   Formex content = application/zip (fmx4.zip)
     - name: metadata
+      required: true
       description: "Document metadata + Formex item URI for ZIP download"
       template: |
         PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
@@ -134,6 +136,7 @@ sparql:
 
     ## ── Step 3: Cross-references ─────────────────────────────
     - name: cross_references
+      required: false
       description: "Documents cited by this work"
       template: |
         PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
@@ -162,6 +165,7 @@ sparql:
 
     ## ── Step 4: EuroVoc ──────────────────────────────────────
     - name: eurovoc
+      required: false
       description: "EuroVoc subject labels"
       template: |
         PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>

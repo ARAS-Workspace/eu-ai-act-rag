@@ -11,17 +11,17 @@
 #
 # Licensed under the MIT License.
 # See LICENSE and THIRD_PARTY_LICENSES for details.
-"""Build corpus from data.yaml workflow definition.
+"""Run a workflow definition to build a corpus.
 
 Usage:
-    python build.py
-    python build.py --output dist/corpus
+    python run.py --workflow workflows/eu-ai-act.yaml
 """
 
 from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Engine lives in workflow-engine/
@@ -32,30 +32,38 @@ from src.config import load_config
 from src.logger import get_logger
 from src.pipeline import run_pipeline
 
-log = get_logger("build")
+log = get_logger("run")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        prog="build",
-        description="Build markdown corpus from workflow definition",
+        prog="run",
+        description="Run a workflow definition to build a corpus",
     )
     parser.add_argument(
-        "--output",
+        "--workflow",
         type=Path,
-        default=Path("dist/corpus"),
-        help="Output directory for corpus files (default: dist/corpus)",
+        required=True,
+        help="Path to workflow YAML file (e.g. workflows/eu-ai-act.yaml)",
     )
     args = parser.parse_args()
 
-    workflow = Path(__file__).resolve().parent / "data.yaml"
+    workflow = args.workflow.resolve()
+    if not workflow.exists():
+        log.error("Workflow file not found: %s", workflow)
+        return 1
 
     cfg_result = load_config(workflow)
     if not cfg_result.ok:
         log.error(cfg_result.error)
         return 1
 
-    output_dir = args.output.resolve()
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stem = workflow.stem
+    output_dir = Path("dist") / f"{stem}-{stamp}" / "corpus"
+    output_dir = output_dir.resolve()
+
+    log.info("Workflow: %s", workflow.name)
     log.info("Output: %s", output_dir)
 
     result = run_pipeline(cfg_result.data, output_dir=output_dir)

@@ -25,6 +25,43 @@ from src.result import Fail, Ok, Result
 
 log = get_logger(__name__)
 
+_SAFE_BUILTINS: dict[str, Any] = {
+    # Types
+    "bool": bool,
+    "dict": dict,
+    "float": float,
+    "int": int,
+    "list": list,
+    "set": set,
+    "str": str,
+    "tuple": tuple,
+    "type": type,
+    # Iteration
+    "enumerate": enumerate,
+    "len": len,
+    "range": range,
+    "sorted": sorted,
+    "zip": zip,
+    "reversed": reversed,
+    "filter": filter,
+    "map": map,
+    # Checks
+    "isinstance": isinstance,
+    "hasattr": hasattr,
+    "getattr": getattr,
+    # Output
+    "print": print,
+    # Exceptions
+    "KeyError": KeyError,
+    "ValueError": ValueError,
+    "TypeError": TypeError,
+    "Exception": Exception,
+    # Constants
+    "True": True,
+    "False": False,
+    "None": None,
+}
+
 
 def execute_script(
     script: str,
@@ -50,7 +87,7 @@ def execute_script(
     }
 
     try:
-        exec(script, {"__builtins__": __builtins__}, namespace)  # noqa: S102
+        exec(script, {"__builtins__": _SAFE_BUILTINS}, namespace)  # noqa: S102
     except Exception as exc:
         return Fail(
             error=f"Script error in step '{step_name}': {type(exc).__name__}: {exc}",

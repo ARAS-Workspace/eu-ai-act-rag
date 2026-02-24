@@ -35,11 +35,11 @@ jobs:
         run: pip install --require-hashes -r workflow-engine/requirements.txt
 
       - name: Build corpus
-        run: python build.py --output dist/corpus
+        run: python run.py --workflow workflows/eu-ai-act.yaml
 
       - name: Upload corpus artifact
         uses: actions/upload-artifact@v4
         with:
           name: corpus
-          path: dist/corpus/
+          path: dist/
           retention-days: 30

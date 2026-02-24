@@ -37,7 +37,7 @@ from src.converter import convert_document
 from src.fetcher import fetch_document
 from src.logger import PipelineSummary, get_logger
 from src.parser import parse_document
-from src.result import Ok, Result
+from src.result import Fail, Ok, Result
 from src.sparql.client import execute_query
 from src.sparql.processor import execute_script
 from src.sparql.queries import render_step
@@ -69,6 +69,8 @@ def _run_sparql(config: PipelineConfig, summary: PipelineSummary) -> Result[dict
         if not query_result.ok:
             log.warning("Step '%s' query failed: %s", step.name, query_result.error)
             counter.failed += 1
+            if step.required:
+                return Fail(error=f"Required step '{step.name}' failed: {query_result.error}")
             continue
 
         script_result = execute_script(
@@ -81,6 +83,8 @@ def _run_sparql(config: PipelineConfig, summary: PipelineSummary) -> Result[dict
         if not script_result.ok:
             log.warning("Step '%s' script failed: %s", step.name, script_result.error)
             counter.failed += 1
+            if step.required:
+                return Fail(error=f"Required step '{step.name}' script failed: {script_result.error}")
             continue
 
         context[step.name] = script_result.data

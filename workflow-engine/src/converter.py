@@ -19,6 +19,7 @@ Templates come from data.yaml corpus config.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -62,7 +63,6 @@ def _resolve_frontmatter_base(
             result = result.replace("{{timestamp}}", timestamp)
             # context.metadata.work_uri pattern
             if "{{context." in result:
-                import re
                 for match in re.finditer(r"\{\{context\.(\w+)\.(\w+)}}", result):
                     step, key = match.group(1), match.group(2)
                     val = context.get(step, {}).get(key, "")
@@ -134,13 +134,12 @@ def convert_document(
     """Convert parsed document to markdown corpus files.
 
     Args:
+        doc: Parsed Formex document with articles, recitals, annexes.
+        config: Corpus output configuration from data.yaml.
+        postprocess: Text normalization rules.
+        context: Accumulated SPARQL context with metadata, cross-refs, eurovoc.
         output_dir: Root directory for corpus output (e.g. dist/corpus).
-        :param summary:
-        :param output_dir:
-        :param postprocess:
-        :param context:
-        :param doc:
-        :param config:
+        summary: Pipeline summary for tracking success/fail counts.
     """
     source = context.get("_source", {})
     timestamp = context.get("_timestamp", "")

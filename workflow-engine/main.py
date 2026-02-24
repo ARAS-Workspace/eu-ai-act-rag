@@ -11,7 +11,7 @@ Copyright (C) 2026 Riza Emre ARAS <r.emrearas@proton.me>
 Licensed under the MIT License.
 See LICENSE and THIRD_PARTY_LICENSES for details.
 
-EU AI Act RAG Corpus Builder - Workflow Engine
+EU AI Act RAG — Workflow Engine
 
 Konfigurasyon odakli corpus olusturucu motoru.
 YAML workflow tanimini okur, SPARQL ile EUR-Lex/Cellar'dan
@@ -27,13 +27,14 @@ via SPARQL, parses it, and converts to Markdown corpus files.
 
 Pipeline: SPARQL -> Fetch -> Parse -> Convert (Postprocess)
 
-Usage: python main.py --workflow=data.yaml
+Usage: python main.py --workflow=../workflows/eu-ai-act.yaml
 """
 
 from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from src.config import load_config
@@ -52,24 +53,28 @@ def main() -> int:
         "--workflow",
         type=Path,
         required=True,
-        help="Path to workflow YAML (e.g. data.yaml)",
+        help="Path to workflow YAML (e.g. ../workflows/eu-ai-act.yaml)",
     )
-
-    parser.add_argument(
-        "--output",
-        type=Path,
-        default=Path("dist/corpus"),
-        help="Output directory for corpus files (default: dist/corpus)",
-    )
-
     args = parser.parse_args()
 
-    cfg_result = load_config(args.workflow)
+    workflow = args.workflow.resolve()
+    if not workflow.exists():
+        log.error("Workflow file not found: %s", workflow)
+        return 1
+
+    cfg_result = load_config(workflow)
     if not cfg_result.ok:
         log.error(cfg_result.error)
         return 1
 
-    result = run_pipeline(cfg_result.data, output_dir=args.output.resolve())
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    stem = workflow.stem
+    output_dir = (Path("dist") / f"{stem}-{stamp}" / "corpus").resolve()
+
+    log.info("Workflow: %s", workflow.name)
+    log.info("Output: %s", output_dir)
+
+    result = run_pipeline(cfg_result.data, output_dir=output_dir)
     if not result.ok:
         log.error("Pipeline failed: %s", result.error)
         return 1

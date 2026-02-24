@@ -4,13 +4,11 @@
 
 ```mermaid
 flowchart TD
-    CLI["build.py<br/><code>--output dist/corpus</code>"]
-    YAML["data.yaml<br/>Workflow Definition"]
+    CLI["run.py --workflow workflows/eu-ai-act.yaml"]
     CONFIG["src/config.py<br/>load_config → PipelineConfig"]
     PIPELINE["src/pipeline.py<br/>run_pipeline"]
 
-    CLI -->|"Path"| CONFIG
-    YAML -->|"YAML parse"| CONFIG
+    CLI -->|"YAML parse"| CONFIG
     CONFIG -->|"PipelineConfig"| PIPELINE
 
     subgraph PHASE_1 ["Phase 1 — SPARQL"]
@@ -78,44 +76,40 @@ flowchart TD
 
 ```bash
 pip install -r workflow-engine/requirements.txt
-python build.py
-```
-
-```bash
-python build.py --output path/to/output
+python run.py --workflow workflows/eu-ai-act.yaml
 ```
 
 ## Output
 
-| Section  | Count | Path                          |
-|----------|-------|-------------------------------|
-| Articles | 113   | `dist/corpus/articles/*.md`   |
-| Recitals | 180   | `dist/corpus/recitals/*.md`   |
-| Annexes  | 13    | `dist/corpus/annexes/*.md`    |
-
+| Section  | Count | Path                   |
+|----------|-------|------------------------|
+| Articles | 113   | `corpus/articles/*.md` |
+| Recitals | 180   | `corpus/recitals/*.md` |
+| Annexes  | 13    | `corpus/annexes/*.md`  |
 
 ## Project Structure
 
 ```
 eu-ai-act-rag/
-├── build.py                    
-├── data.yaml                   
+├── run.py                     # Entry point
+├── workflows/
+│   └── eu-ai-act.yaml         # Workflow definition
 ├── workflow-engine/
 │   ├── requirements.in
-│   ├── requirements.txt        
+│   ├── requirements.txt
 │   └── src/
-│       ├── config.py           
-│       ├── converter.py        
-│       ├── fetcher.py          
-│       ├── logger.py           
-│       ├── parser.py           
-│       ├── pipeline.py         
-│       ├── result.py           
+│       ├── config.py
+│       ├── converter.py
+│       ├── fetcher.py
+│       ├── logger.py
+│       ├── parser.py
+│       ├── pipeline.py
+│       ├── result.py
 │       └── sparql/
-│           ├── client.py       
-│           ├── processor.py    
-│           └── queries.py      
-└── dist/corpus/                
+│           ├── client.py
+│           ├── processor.py
+│           └── queries.py
+└── dist/                      # Output (gitignored)
 ```
 
 ## License

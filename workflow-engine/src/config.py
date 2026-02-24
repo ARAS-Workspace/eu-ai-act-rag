@@ -36,6 +36,7 @@ class SparqlStep:
     description: str
     template: str
     script: str
+    required: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,6 +121,7 @@ def _build_steps(raw_steps: list[dict[str, Any]]) -> list[SparqlStep]:
             description=s["description"],
             template=s["template"],
             script=s["script"],
+            required=s.get("required", False),
         )
         for s in raw_steps
     ]

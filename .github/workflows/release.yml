@@ -33,10 +33,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: corpus
-          path: dist/corpus
+          path: dist
 
       - name: Create release archive
-        run: tar -czf corpus.tar.gz -C dist corpus
+        run: tar -czf corpus.tar.gz -C dist .
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
