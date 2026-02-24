@@ -8,38 +8,39 @@
 # Copyright (C) 2026 Riza Emre ARAS <r.emrearas@proton.me>
 # EU AI Act RAG — MIT License
 
-name: Build Corpus
+name: Release
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_call:
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (e.g. 1.0.0)"
+        required: true
+        type: string
 
 jobs:
   build:
+    uses: ./.github/workflows/build.yml
+
+  release:
+    needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install --require-hashes -r workflow-engine/requirements.txt
-
-      - name: Build corpus
-        run: python build.py --output dist/corpus
-
-      - name: Upload corpus artifact
-        uses: actions/upload-artifact@v4
+      - name: Download corpus artifact
+        uses: actions/download-artifact@v4
         with:
           name: corpus
-          path: dist/corpus/
-          retention-days: 30
+          path: dist/corpus
+
+      - name: Create release archive
+        run: tar -czf corpus.tar.gz -C dist corpus
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v-${{ inputs.version }}"
+          name: "v-${{ inputs.version }}"
+          files: corpus.tar.gz
