@@ -1,0 +1,265 @@
+#file: noinspection HttpUrlsUsage
+## ──────────────────────────────────────────────────────────────
+##  █████╗ ██████╗  █████╗ ███████╗
+## ██╔══██╗██╔══██╗██╔══██╗██╔════╝
+## ███████║██████╔╝███████║███████╗
+## ██╔══██║██╔══██╗██╔══██║╚════██║
+## ██║  ██║██║  ██║██║  ██║███████║
+## ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
+## Copyright (C) 2026 Riza Emre ARAS <r.emrearas@proton.me>
+## EU AI Act RAG — MIT License
+## ──────────────────────────────────────────────────────────────
+##
+## EU AI Act — Corpus Builder Workflow
+##
+## Bu dosya calistirilabilir bir workflow tanimidir.
+## Python motoru sadece orkestrasyon yapar:
+##   1. Template'i renderla → SPARQL calistir → bindings al
+##   2. Step'in script'ini calistir (bindings + context verilir)
+##   3. Script'in output'unu context'e kaydet
+##   4. Sonraki step'e gec
+##
+## This file is an executable workflow definition.
+## The Python engine only orchestrates:
+##   1. Render template → execute SPARQL → get bindings
+##   2. Execute the step's script (bindings + context provided)
+##   3. Store the script's output in context
+##   4. Move to the next step
+##
+## Script scope:
+##   bindings : list[dict]  — SPARQL JSON result bindings
+##   context  : dict        — outputs from previous steps
+##   source   : dict        — source config (celex, language, ...)
+##   output   : any         — script sets this, engine captures it
+## ──────────────────────────────────────────────────────────────
+
+## ── Source definition ──────────────────────────────────────────
+source:
+  celex: "32024R1689"
+  title: "EU AI Act"
+  language: "ENG"
+  language_code: "en"
+
+## ── SPARQL workflow ────────────────────────────────────────────
+sparql:
+  endpoint: "https://publications.europa.eu/webapi/rdf/sparql"
+  timeout: 30
+
+  steps:
+
+    ## ── Step 1: Discovery ────────────────────────────────────
+    - name: discover
+      description: "Discover available CDM properties"
+      template: |
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        SELECT ?p ?o WHERE {
+          ?s cdm:resource_legal_id_celex "{{celex}}" .
+          ?s ?p ?o .
+        } LIMIT 50
+      script: |
+        output = [
+            {"predicate": b["p"]["value"], "object": b["o"]["value"]}
+            for b in bindings
+        ]
+
+    ## ── Step 2: Metadata ─────────────────────────────────────
+    ## CDM ontology structure (verified via discovery):
+    ##   Work ← expression_belongs_to_work ← Expression
+    ##   Expression ← manifestation_manifests_expression ← Manifestation
+    ##   Manifestation ← item_belongs_to_manifestation ← Item
+    ##   Item → manifestationMimeType, stream_name
+    ##   Formex content = application/zip (fmx4.zip)
+    - name: metadata
+      description: "Document metadata + Formex item URI for ZIP download"
+      template: |
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        SELECT DISTINCT ?work ?title ?date ?force ?manif ?manif_type ?item ?mime
+        WHERE {
+          ?work cdm:resource_legal_id_celex "{{celex}}"^^xsd:string .
+          OPTIONAL { ?work cdm:resource_legal_date_signature ?date . }
+          OPTIONAL { ?work cdm:resource_legal_in-force ?force . }
+          OPTIONAL {
+            ?expr cdm:expression_belongs_to_work ?work .
+            ?expr cdm:expression_uses_language <http://publications.europa.eu/resource/authority/language/{{language}}> .
+            ?expr cdm:expression_title ?title .
+            ?manif cdm:manifestation_manifests_expression ?expr .
+            ?manif cdm:manifestation_type ?manif_type .
+            OPTIONAL {
+              ?item cdm:item_belongs_to_manifestation ?manif .
+              ?item cdm:manifestationMimeType ?mime .
+            }
+          }
+        }
+      script: |
+        def val(row, key):
+            return row.get(key, {}).get("value", "")
+
+        meta = {
+            "work_uri": "",
+            "title": "",
+            "date": "",
+            "in_force": False,
+            "manifestations": [],
+        }
+        seen = set()
+
+        for row in bindings:
+            if not meta["work_uri"]:
+                meta["work_uri"] = val(row, "work")
+            if not meta["title"]:
+                meta["title"] = val(row, "title")
+            if not meta["date"]:
+                meta["date"] = val(row, "date")
+
+            force = val(row, "force")
+            if force:
+                meta["in_force"] = force.lower() in ("true", "yes", "1")
+
+            manif = val(row, "manif")
+            mtype = val(row, "manif_type")
+            item = val(row, "item")
+            mime = val(row, "mime")
+            key = f"{manif}|{item}"
+            if manif and key not in seen:
+                meta["manifestations"].append({
+                    "uri": manif,
+                    "type": mtype,
+                    "item_uri": item,
+                    "mime": mime,
+                })
+                seen.add(key)
+
+        output = meta
+
+    ## ── Step 3: Cross-references ─────────────────────────────
+    - name: cross_references
+      description: "Documents cited by this work"
+      template: |
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        SELECT DISTINCT ?ref_celex ?ref_title
+        WHERE {
+          ?work cdm:resource_legal_id_celex "{{celex}}"^^xsd:string .
+          ?work cdm:work_cites_work ?ref_work .
+          OPTIONAL { ?ref_work cdm:resource_legal_id_celex ?ref_celex . }
+          OPTIONAL {
+            ?ref_expr cdm:expression_belongs_to_work ?ref_work .
+            ?ref_expr cdm:expression_uses_language <http://publications.europa.eu/resource/authority/language/{{language}}> .
+            ?ref_expr cdm:expression_title ?ref_title .
+          }
+        }
+      script: |
+        seen = set()
+        refs = []
+        for row in bindings:
+            celex = row.get("ref_celex", {}).get("value", "")
+            title = row.get("ref_title", {}).get("value", "")
+            if celex and celex not in seen:
+                refs.append({"celex": celex, "title": title})
+                seen.add(celex)
+        output = refs
+
+    ## ── Step 4: EuroVoc ──────────────────────────────────────
+    - name: eurovoc
+      description: "EuroVoc subject labels"
+      template: |
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+        SELECT DISTINCT ?subject_label
+        WHERE {
+          ?work cdm:resource_legal_id_celex "{{celex}}"^^xsd:string .
+          ?work cdm:work_is_about_concept_eurovoc ?concept .
+          ?concept skos:prefLabel ?subject_label .
+          FILTER(LANG(?subject_label) = "{{language_code}}")
+        }
+      script: |
+        seen = set()
+        labels = []
+        for row in bindings:
+            label = row.get("subject_label", {}).get("value", "")
+            if label and label not in seen:
+                labels.append(label)
+                seen.add(label)
+        output = labels
+
+## ── Fetch workflow ─────────────────────────────────────────────
+## Formex content is a ZIP archive, downloaded from the manifestation URI.
+## Download/extraction uses a temp dir (mkdtemp), cleaned up after pipeline.
+fetch:
+  uri_select_script: |
+    # Find the Formex (fmx4) manifestation URI
+    # Cellar REST API: manifestation URI + Accept: application/zip → ZIP content
+    manifests = context["metadata"]["manifestations"]
+    selected = None
+    for m in manifests:
+        if m.get("type") == "fmx4":
+            selected = m["uri"]
+            break
+    if not selected and manifests:
+        selected = manifests[0]["uri"]
+    output = selected
+
+  accept_header: "application/zip"
+  content_type: "zip"
+  retry:
+    attempts: 3
+    delay_seconds: 5
+
+## ── Postprocess workflow ───────────────────────────────────────
+## Text normalization applied before writing corpus files.
+## Cleans special Unicode whitespace characters from XML source.
+postprocess:
+  normalize:
+    - find: "\u00A0"      # NBSP (Non-Breaking Space)
+      replace: " "
+    - find: "\u2007"      # Figure Space
+      replace: " "
+    - find: "\u202F"      # Narrow NBSP
+      replace: " "
+    - find: "\u200B"      # Zero-Width Space
+      replace: ""
+    - find: "\uFEFF"      # BOM (Byte Order Mark)
+      replace: ""
+
+## ── Corpus output workflow ─────────────────────────────────────
+corpus:
+  ## Frontmatter template resolved at runtime.
+  ## {{...}} placeholders are resolved from source and context.
+  frontmatter_base:
+    language: "{{language_code}}"
+    source:
+      celex: "{{celex}}"
+      cellar_uri: "{{context.metadata.work_uri}}"
+      retrieved_at: "{{timestamp}}"
+
+  sections:
+    articles:
+      dir: "articles"
+      filename: "article-{number}.md"
+      heading: "Article {number} — {title}"
+      frontmatter:
+        type: "article"
+        article: "{number}"
+        title: "{title}"
+        chapter: "{chapter}"
+        chapter_title: "{chapter_title}"
+
+    recitals:
+      dir: "recitals"
+      filename: "recital-{number}.md"
+      heading: "Recital {number}"
+      frontmatter:
+        type: "recital"
+        recital: "{number}"
+        title: "Recital {number}"
+
+    annexes:
+      dir: "annexes"
+      filename: "annex-{number}.md"
+      heading: "Annex {number} — {title}"
+      frontmatter:
+        type: "annex"
+        annex: "{number}"
+        title: "{title}"

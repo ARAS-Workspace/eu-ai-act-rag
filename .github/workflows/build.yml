@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: MIT
+#  █████╗ ██████╗  █████╗ ███████╗
+# ██╔══██╗██╔══██╗██╔══██╗██╔════╝
+# ███████║██████╔╝███████║███████╗
+# ██╔══██║██╔══██╗██╔══██║╚════██║
+# ██║  ██║██║  ██║██║  ██║███████║
+# ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
+# Copyright (C) 2026 Riza Emre ARAS <r.emrearas@proton.me>
+# EU AI Act RAG — MIT License
+
+name: Build Corpus
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install --require-hashes -r workflow-engine/requirements.txt
+
+      - name: Build corpus
+        run: python build.py --output dist/corpus
+
+      - name: Upload corpus artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: corpus
+          path: dist/corpus/
+          retention-days: 30

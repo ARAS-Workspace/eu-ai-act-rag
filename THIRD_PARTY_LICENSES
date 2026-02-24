@@ -1,0 +1,79 @@
+ █████╗ ██████╗  █████╗ ███████╗
+██╔══██╗██╔══██╗██╔══██╗██╔════╝
+███████║██████╔╝███████║███████╗
+██╔══██║██╔══██╗██╔══██║╚════██║
+██║  ██║██║  ██║██║  ██║███████║
+╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
+
+THIRD PARTY LICENSES
+================================================================================
+
+EU AI Act RAG
+Copyright (C) 2026 Riza Emre ARAS <r.emrearas@proton.me>
+Licensed under MIT - see LICENSE file for details
+
+This document lists third-party software dependencies and their licenses.
+
+================================================================================
+PYTHON DEPENDENCIES
+================================================================================
+
+Production dependencies (requirements.in):
+
+| Package         | Version    | License       | SPDX Identifier |
+|-----------------|------------|---------------|-----------------|
+| certifi         | 2026.01.04 | MPL-2.0       | MPL-2.0         |
+| lxml            | 6.0.2      | BSD 3-Clause  | BSD-3-Clause    |
+| pyyaml          | 6.0.3      | MIT License   | MIT             |
+
+License URLs:
+- certifi:  https://github.com/certifi/python-certifi/blob/master/LICENSE
+- lxml:     https://github.com/lxml/lxml/blob/master/LICENSE.txt
+- PyYAML:   https://github.com/yaml/pyyaml/blob/main/LICENSE
+
+================================================================================
+EXTERNAL SERVICES & DATA SOURCES
+================================================================================
+
+| Service / Data          | Provider                   | License / Terms             |
+|-------------------------|----------------------------|-----------------------------|
+| EUR-Lex / Cellar        | Publications Office of EU  | Commission Decision 2011/833/EU (reuse of EU documents) |
+| SPARQL Endpoint         | Publications Office of EU  | Free access, no authentication |
+| CDM Ontology            | Publications Office of EU  | EUPL-1.2                    |
+| EuroVoc Thesaurus       | Publications Office of EU  | EUPL-1.2                    |
+
+Data Reuse Notice:
+EU legal documents retrieved via EUR-Lex / Cellar are subject to
+Commission Decision 2011/833/EU on the reuse of Commission documents.
+Reproduction is authorised provided the source is acknowledged.
+See: https://eur-lex.europa.eu/content/legal-notice/legal-notice.html
+
+Service URLs:
+- EUR-Lex:      https://eur-lex.europa.eu/
+- Cellar:       https://publications.europa.eu/en/web/cellar
+- SPARQL:       https://publications.europa.eu/webapi/rdf/sparql
+- CDM:          https://op.europa.eu/en/web/eu-vocabularies/cdm
+- EuroVoc:      https://op.europa.eu/en/web/eu-vocabularies/eurovoc
+
+================================================================================
+LICENSE COMPATIBILITY
+================================================================================
+
+All listed licenses (MIT, BSD-3-Clause, MPL-2.0, EUPL-1.2) are
+compatible with MIT and allow use in this project.
+
+MPL-2.0 (certifi): File-level copyleft only, compatible with MIT.
+EUPL-1.2 (CDM/EuroVoc ontologies): Used as data sources via SPARQL,
+not distributed as part of this software.
+
+================================================================================
+DOCUMENT INFO
+================================================================================
+
+Maintained by:  Riza Emre ARAS <r.emrearas@proton.me>
+Project:        EU AI Act RAG
+License:        MIT
+Repository:     https://github.com/ARAS-Workspace/eu-ai-act-rag
+Last Updated:   2026-02-25
+
+================================================================================
