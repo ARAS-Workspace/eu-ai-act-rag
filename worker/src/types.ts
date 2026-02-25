@@ -24,8 +24,18 @@ import {SearchOptions} from "./ai";
 export interface Env {
 	AISEARCH_NAME: string;
 	ENVIRONMENT?: string;
+	TURNSTILE_SECRET_KEY?: string;
 	EU_AI_ACT_RAG_WORKER_KV: KVNamespace;
 	AI: Ai;
+}
+
+// ========================================
+// Turnstile Types
+// ========================================
+
+export interface TurnstileResult {
+	allowed: boolean;
+	error?: string;
 }
 
 // ========================================

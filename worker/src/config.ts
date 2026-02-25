@@ -77,8 +77,8 @@ export const CONFIG = {
 		 * Configured in Cloudflare Dashboard > AI Search > Settings:
 		 *
 		 * Embedding Model: @cf/qwen/qwen3-embedding-0.6b (1024 dimensions, 4096 input tokens)
-		 * Chunk Size: 512 tokens
-		 * Chunk Overlap: 10%
+		 * Chunk Size: 384 tokens
+		 * Chunk Overlap: 20%
 		 * Vector Store: Cloudflare Vectorize (1024 dimensions)
 		 * Object Storage: Cloudflare R2 (eu-ai-act-rag bucket)
 		 *
@@ -102,6 +102,14 @@ export const CONFIG = {
 		requestsPerMinute: 10,
 		requestsPerHour: 100,
 		requestsPerDay: 500,
+	},
+
+	/**
+	 * Cloudflare Turnstile Configuration
+	 * @see https://developers.cloudflare.com/turnstile/
+	 */
+	turnstile: {
+		siteverifyUrl: 'https://challenges.cloudflare.com/turnstile/v0/siteverify',
 	},
 
 	/**

@@ -18,10 +18,11 @@
 
 import type { Env, ChatRequest, ChatResponse } from './types';
 import { CONFIG } from './config';
-import { badRequest, badGateway, internalServerError, tooManyRequests, notFound, methodNotAllowed } from './utils/errors';
+import { badRequest, badGateway, forbidden, internalServerError, tooManyRequests, notFound, methodNotAllowed } from './utils/errors';
 import { logError, logInfo, logWarn } from './utils/logging';
 import { validateChatRequest } from './validation/request';
 import { checkRateLimits } from './middleware/ratelimit';
+import { checkTurnstile } from './middleware/turnstile';
 import { getTranslations, parseLocale, type Locale } from './translations';
 import { AutoRAGManager } from './ai';
 import { SYSTEM_PROMPT } from './ai/prompts';
@@ -29,7 +30,7 @@ import { SYSTEM_PROMPT } from './ai/prompts';
 const CORS_HEADERS = {
 	'Access-Control-Allow-Origin': '*',
 	'Access-Control-Allow-Methods': 'POST, OPTIONS',
-	'Access-Control-Allow-Headers': 'Content-Type',
+	'Access-Control-Allow-Headers': 'Content-Type, X-Turnstile-Token',
 	'Access-Control-Max-Age': '86400',
 };
 
@@ -72,6 +73,18 @@ export default {
 				logWarn('[RAG-WORKER] Rate limit exceeded', { remaining: rateLimitResult.remaining }, env);
 				const t = getTranslations('en').errors;
 				return tooManyRequests(t.rateLimitExceeded, rateLimitResult.retryAfter);
+			}
+
+			// 5.5 Turnstile check
+			const turnstileResult = await checkTurnstile(request, env);
+			if (!turnstileResult.allowed) {
+				logWarn('[RAG-WORKER] Turnstile verification failed', { error: turnstileResult.error }, env);
+				const t = getTranslations('en').errors;
+				return forbidden(
+					turnstileResult.error === 'missing_token'
+						? t.turnstileRequired
+						: t.turnstileInvalid,
+				);
 			}
 
 			// 6. Parse request body

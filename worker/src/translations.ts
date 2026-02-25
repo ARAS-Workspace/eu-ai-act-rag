@@ -14,6 +14,8 @@ export interface ErrorMessages {
 	endpointNotFound: string;
 	methodNotAllowed: string;
 	rateLimitExceeded: string;
+	turnstileRequired: string;
+	turnstileInvalid: string;
 	upstreamConnectionFailed: string;
 	serviceUnavailable: string;
 	unexpectedError: string;
@@ -57,6 +59,8 @@ const translations: Record<Locale, Translations> = {
 			endpointNotFound: 'Endpoint not found. Use POST /api/v1/chat/completions',
 			methodNotAllowed: 'Only POST and OPTIONS requests are allowed',
 			rateLimitExceeded: 'Rate limit exceeded. Please try again later',
+			turnstileRequired: 'Security verification required',
+			turnstileInvalid: 'Security verification failed. Please try again',
 			upstreamConnectionFailed: 'Failed to connect to AI service',
 			serviceUnavailable: 'Service temporarily unavailable',
 			unexpectedError: 'An unexpected error occurred',
@@ -93,6 +97,8 @@ const translations: Record<Locale, Translations> = {
 			endpointNotFound: 'Endpoint bulunamadi. POST /api/v1/chat/completions kullanin',
 			methodNotAllowed: 'Sadece POST ve OPTIONS istekleri kabul edilir',
 			rateLimitExceeded: 'Istek limiti asildi. Lutfen daha sonra tekrar deneyin',
+			turnstileRequired: 'Guvenlik dogrulamasi gerekli',
+			turnstileInvalid: 'Guvenlik dogrulamasi basarisiz. Lutfen tekrar deneyin',
 			upstreamConnectionFailed: 'AI servisine baglanilamadi',
 			serviceUnavailable: 'Servis gecici olarak kullanilamiyor',
 			unexpectedError: 'Beklenmeyen bir hata olustu',

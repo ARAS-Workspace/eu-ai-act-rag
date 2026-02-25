@@ -51,7 +51,12 @@
 	/**
 	 * Production Secrets (set via CLI):
 	 * npx wrangler secret put AISEARCH_NAME
+	 * npx wrangler secret put TURNSTILE_SECRET_KEY
+	 *
+	 * TURNSTILE_SECRET_KEY: Cloudflare Turnstile secret key
+	 * @see https://developers.cloudflare.com/turnstile/get-started/
 	 *
 	 * Development: Use .dev.vars file for local environment variables
+	 * Turnstile is automatically skipped when ENVIRONMENT=development
 	 */
 }

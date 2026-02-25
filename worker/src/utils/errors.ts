@@ -10,7 +10,7 @@ import type { ErrorResponse } from '../types';
 const CORS_HEADERS = {
 	'Access-Control-Allow-Origin': '*',
 	'Access-Control-Allow-Methods': 'POST, OPTIONS',
-	'Access-Control-Allow-Headers': 'Content-Type',
+	'Access-Control-Allow-Headers': 'Content-Type, X-Turnstile-Token',
 };
 
 export function createErrorResponse(
@@ -43,6 +43,10 @@ export function createErrorResponse(
 
 export function badRequest(message: string, details?: unknown): Response {
 	return createErrorResponse('invalid_request', 400, message, details);
+}
+
+export function forbidden(message = 'Forbidden'): Response {
+	return createErrorResponse('forbidden', 403, message);
 }
 
 export function notFound(message = 'Endpoint not found'): Response {
