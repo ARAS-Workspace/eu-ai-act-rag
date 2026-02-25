@@ -94,9 +94,9 @@ def _build_frontmatter(
     # Base fields (source, language, etc.)
     fm.update(base)
 
-    # Cross-references and EuroVoc
+    # Cross-references (first 5 CELEX numbers only — full list bloats embeddings)
     if cross_refs:
-        fm["cross_references"] = cross_refs
+        fm["cross_references"] = [ref["celex"] for ref in cross_refs[:5]]
     if eurovoc:
         fm["eurovoc"] = eurovoc
 
@@ -104,20 +104,19 @@ def _build_frontmatter(
 
 
 def _article_to_markdown(article: Article) -> str:
-    """Convert an Article to markdown body text."""
+    """Convert an Article to markdown body text.
+
+    Items are already inlined in para.text by the parser (preserving document order).
+    """
     lines: list[str] = []
 
     for para in article.paragraphs:
-        lines.append(f"## {para.number}.")
-        lines.append("")
+        if para.number:
+            lines.append(f"## {para.number}.")
+            lines.append("")
 
         if para.text:
             lines.append(para.text)
-            lines.append("")
-
-        for item in para.items:
-            prefix = f"({item.letter})" if item.letter else "-"
-            lines.append(f"{prefix} {item.text}")
             lines.append("")
 
     return "\n".join(lines)

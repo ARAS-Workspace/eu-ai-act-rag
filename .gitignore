@@ -16,6 +16,10 @@ __pycache__/
 .venv/
 .env/
 
+# ── Secrets ─────────────────────────────────────────
+.env
+!.env.example
+
 # ── Build Output ─────────────────────────────────────
 dist/
 corpus/

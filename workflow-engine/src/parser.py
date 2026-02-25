@@ -84,6 +84,15 @@ def _text(element: _XmlElement | None) -> str:
     return (etree.tostring(element, method="text", encoding="unicode") or "").strip()
 
 
+def _table_to_text(tbl: _XmlElement) -> str:
+    """Extract readable text from a TBL element."""
+    rows: list[str] = []
+    for row in tbl.iter("ROW"):
+        cells = [_text(cell) for cell in row.findall("CELL")]
+        rows.append(" | ".join(c for c in cells if c))
+    return "\n".join(rows) if rows else _text(tbl)
+
+
 def _element_to_text(element: _XmlElement) -> str:
     """Convert an element and its children to plain text, preserving structure."""
     parts: list[str] = []
@@ -95,13 +104,45 @@ def _element_to_text(element: _XmlElement) -> str:
         tag = child.tag if isinstance(child.tag, str) else ""
 
         if tag == "P":
-            parts.append(_text(child))
+            # If P has structured children (LIST, NP, etc.), recurse
+            if any(hasattr(gc, "tag") and gc.tag in ("LIST", "NP", "GR.SEQ", "TBL") for gc in child):
+                parts.append(_element_to_text(child))
+            else:
+                parts.append(_text(child))
         elif tag == "LIST":
             parts.append(_parse_list(child))
         elif tag == "NP":
             no_p = _text(child.find("NO.P"))
             txt = _text(child.find("TXT"))
             parts.append(f"{no_p} {txt}" if no_p else txt)
+        elif tag == "GR.SEQ":
+            ti = _text(child.find("TITLE/TI"))
+            sti = _text(child.find("TITLE/STI"))
+            title = f"{ti} — {sti}" if ti and sti else (ti or sti)
+            if title:
+                parts.append(f"\n### {title}\n")
+            for sub in child:
+                if sub.tag != "TITLE":
+                    parts.append(_element_to_text(sub))
+        elif tag == "TBL":
+            parts.append(_table_to_text(child))
+        elif tag == "ITEM":
+            np = child.find("NP")
+            if np is not None:
+                no_p = _text(np.find("NO.P"))
+                txt_el = np.find("TXT")
+                txt = _text(txt_el) if txt_el is not None else _text(np)
+                parts.append(f"{no_p} {txt}" if no_p else txt)
+                nested = _find_nested_list(child, np)
+                if nested is not None:
+                    parts.append(_parse_list(nested))
+                # QUOT.S inside NP > P (amendment articles)
+                for p_el in np.findall("P"):
+                    quot = p_el.find("QUOT.S")
+                    if quot is not None:
+                        parts.append(_element_to_text(quot))
+            else:
+                parts.append(_text(child))
         elif tag == "NOTE":
             pass  # Skip footnotes in body text
         else:
@@ -115,18 +156,141 @@ def _element_to_text(element: _XmlElement) -> str:
     return "\n\n".join(p for p in parts if p)
 
 
+def _find_nested_list(item_el: _XmlElement, np: _XmlElement | None) -> _XmlElement | None:
+    """Find a nested LIST in ITEM, checking TXT > NP > NP/P > ITEM positions."""
+    if np is not None:
+        txt_el = np.find("TXT")
+        if txt_el is not None:
+            nested = txt_el.find("LIST")
+            if nested is not None:
+                return nested
+        nested = np.find("LIST")
+        if nested is not None:
+            return nested
+        # LIST inside P which is inside NP (common in annexes)
+        p_el = np.find("P")
+        if p_el is not None:
+            nested = p_el.find("LIST")
+            if nested is not None:
+                return nested
+    return item_el.find("LIST")
+
+
 def _parse_list(list_el: _XmlElement) -> str:
-    """Parse a LIST element into formatted text."""
+    """Parse a LIST element into formatted text (recursive)."""
     items: list[str] = []
     for item_el in list_el.findall("ITEM"):
         np = item_el.find("NP")
+        nested = _find_nested_list(item_el, np)
+
         if np is not None:
             no_p = _text(np.find("NO.P"))
-            txt = _text(np.find("TXT"))
-            items.append(f"{no_p} {txt}" if no_p else txt)
+            txt_el = np.find("TXT")
+            txt = _text(txt_el) if txt_el is not None else _text(np)
+            if nested is not None:
+                if txt:
+                    items.append(f"{no_p} {txt}" if no_p else txt)
+                items.append(_parse_list(nested))
+            else:
+                items.append(f"{no_p} {txt}" if no_p else txt)
         else:
-            items.append(_text(item_el))
+            alinea = item_el.find("ALINEA")
+            if alinea is not None:
+                a_nested = alinea.find("LIST")
+                if a_nested is not None:
+                    p_el = alinea.find("P")
+                    if p_el is not None:
+                        items.append(_text(p_el))
+                    items.append(_parse_list(a_nested))
+                else:
+                    items.append(_element_to_text(alinea))
+            elif nested is not None:
+                items.append(_parse_list(nested))
+            else:
+                items.append(_text(item_el))
     return "\n\n".join(items)
+
+
+def _collect_list_items(
+    list_el: _XmlElement,
+    parts: list[str],
+    items: list[Item],
+) -> None:
+    """Recursively collect items from a LIST element.
+
+    Adds items inline to parts (for correct ordering in text) and
+    also populates the items list (for structured access).
+    Checks TXT > NP > ITEM positions for nested LISTs.
+    """
+    for item_el in list_el.findall("ITEM"):
+        np = item_el.find("NP")
+        nested = _find_nested_list(item_el, np)
+
+        if np is not None:
+            letter = _text(np.find("NO.P")).strip("()")
+            txt_el = np.find("TXT")
+            txt = _text(txt_el) if txt_el is not None else _text(np)
+            if nested is not None:
+                if txt:
+                    items.append(Item(letter=letter, text=txt))
+                    parts.append(f"({letter}) {txt}")
+                _collect_list_items(nested, parts, items)
+            else:
+                items.append(Item(letter=letter, text=txt))
+                parts.append(f"({letter}) {txt}")
+                # QUOT.S inside NP > P (amendment articles)
+                for p_el in np.findall("P"):
+                    quot = p_el.find("QUOT.S")
+                    if quot is not None:
+                        qt = _element_to_text(quot)
+                        if qt:
+                            parts.append(qt)
+        else:
+            alinea = item_el.find("ALINEA")
+            if alinea is not None:
+                a_nested = alinea.find("LIST")
+                if a_nested is not None:
+                    p_el = alinea.find("P")
+                    if p_el is not None:
+                        parts.append(_text(p_el))
+                    _collect_list_items(a_nested, parts, items)
+                else:
+                    parts.append(_element_to_text(alinea))
+            elif nested is not None:
+                _collect_list_items(nested, parts, items)
+            else:
+                t = _text(item_el)
+                if t:
+                    items.append(Item(letter="", text=t))
+                    parts.append(f"- {t}")
+
+
+def _process_alinea_children(
+    alinea: _XmlElement,
+    parts: list[str],
+    items: list[Item],
+) -> None:
+    """Process children of an ALINEA element, preserving document order."""
+    if alinea.text and alinea.text.strip():
+        parts.append(alinea.text.strip())
+
+    for child in alinea:
+        tag = child.tag if isinstance(child.tag, str) else ""
+        if tag == "P":
+            parts.append(_text(child))
+        elif tag == "LIST":
+            _collect_list_items(child, parts, items)
+        elif tag == "NP":
+            no_p = _text(child.find("NO.P"))
+            txt = _text(child.find("TXT"))
+            if txt:
+                parts.append(f"{no_p} {txt}" if no_p else txt)
+        elif tag == "NOTE":
+            pass
+        else:
+            t = _text(child)
+            if t:
+                parts.append(t)
 
 
 def _parse_paragraph(parag: _XmlElement) -> Paragraph:
@@ -140,30 +304,7 @@ def _parse_paragraph(parag: _XmlElement) -> Paragraph:
 
     if alineas:
         for alinea in alineas:
-            if alinea.text and alinea.text.strip():
-                text_parts.append(alinea.text.strip())
-
-            for child in alinea:
-                tag = child.tag if isinstance(child.tag, str) else ""
-                if tag == "P":
-                    text_parts.append(_text(child))
-                elif tag == "LIST":
-                    for item_el in child.findall("ITEM"):
-                        np = item_el.find("NP")
-                        if np is not None:
-                            letter = _text(np.find("NO.P")).strip("()")
-                            txt = _text(np.find("TXT"))
-                            items.append(Item(letter=letter, text=txt))
-                        else:
-                            items.append(Item(letter="", text=_text(item_el)))
-                elif tag == "NP":
-                    pass
-                elif tag == "NOTE":
-                    pass
-                else:
-                    t = _text(child)
-                    if t:
-                        text_parts.append(t)
+            _process_alinea_children(alinea, text_parts, items)
     else:
         text_parts.append(_text(parag))
 
@@ -198,7 +339,20 @@ def parse_articles(root: _XmlElement) -> list[Article]:
         parent_div = art_el.getparent()
         chapter, chapter_title = _find_chapter_context(parent_div)
 
-        paragraphs = [_parse_paragraph(p) for p in art_el.findall("PARAG")]
+        parags = art_el.findall("PARAG")
+        if parags:
+            paragraphs = [_parse_paragraph(p) for p in parags]
+        else:
+            # Articles without PARAG wrapper (e.g. Article 3 Definitions)
+            # have ALINEA directly under ARTICLE
+            items: list[Item] = []
+            text_parts: list[str] = []
+            for alinea in art_el.findall("ALINEA"):
+                _process_alinea_children(alinea, text_parts, items)
+            if text_parts or items:
+                paragraphs = [Paragraph(number="", text="\n\n".join(text_parts), items=items)]
+            else:
+                paragraphs = []
 
         articles.append(Article(
             number=number,

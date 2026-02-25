@@ -39,6 +39,7 @@ from src.logger import PipelineSummary, get_logger
 from src.parser import parse_document
 from src.result import Fail, Ok, Result
 from src.sparql.client import execute_query
+from src.validator import validate_document
 from src.sparql.processor import execute_script
 from src.sparql.queries import render_step
 
@@ -153,6 +154,17 @@ def run_pipeline(config: PipelineConfig, output_dir: Path) -> Result[dict[str, A
             log.error("Parse failed: %s", parse_result.error)
             log.info(summary.report())
             return parse_result  # type: ignore[return-value]
+
+        # 3.5 Validate (advisory — never blocks pipeline)
+        if config.validation.enabled:
+            validate_document(
+                doc=parse_result.data,
+                source_dir=source_dir,
+                config=config.validation,
+                output_dir=output_dir,
+                summary=summary,
+                timestamp=timestamp,
+            )
 
         # 4. Convert (with postprocess normalization)
         convert_result = convert_document(

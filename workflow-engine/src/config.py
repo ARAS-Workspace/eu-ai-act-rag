@@ -85,6 +85,18 @@ class PostprocessConfig:
     normalize: list[NormalizeRule]
 
 
+# ── Validation ────────────────────────────────────────────────
+
+@dataclass(frozen=True, slots=True)
+class ValidationConfig:
+    """Data quality validation settings."""
+    enabled: bool
+    expected_articles: int
+    expected_recitals: int
+    expected_annexes: int
+    coverage_ratio_threshold: float
+
+
 # ── Corpus ─────────────────────────────────────────────────────
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +121,7 @@ class PipelineConfig:
     sparql: SparqlConfig
     fetch: FetchConfig
     postprocess: PostprocessConfig
+    validation: ValidationConfig
     corpus: CorpusConfig
 
 
@@ -125,6 +138,17 @@ def _build_steps(raw_steps: list[dict[str, Any]]) -> list[SparqlStep]:
         )
         for s in raw_steps
     ]
+
+
+def _build_validation(raw: dict[str, Any]) -> ValidationConfig:
+    v = raw.get("validation", {})
+    return ValidationConfig(
+        enabled=v.get("enabled", False),
+        expected_articles=v.get("expected_articles", 0),
+        expected_recitals=v.get("expected_recitals", 0),
+        expected_annexes=v.get("expected_annexes", 0),
+        coverage_ratio_threshold=v.get("coverage_ratio_threshold", 0.8),
+    )
 
 
 def _build_postprocess(raw: dict[str, Any]) -> PostprocessConfig:
@@ -177,6 +201,7 @@ def load_config(path: Path) -> Result[PipelineConfig]:
                 ),
             ),
             postprocess=_build_postprocess(raw.get("postprocess", {})),
+            validation=_build_validation(raw),
             corpus=CorpusConfig(
                 frontmatter_base=raw["corpus"]["frontmatter_base"],
                 sections=_build_sections(raw["corpus"]["sections"]),

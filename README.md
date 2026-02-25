@@ -59,16 +59,27 @@ flowchart TD
         C_NORM --> C_WRITE
     end
 
+    subgraph PHASE_V ["Phase 3.5 — Validate (advisory)"]
+        V_SRC["_build_source_text_map<br/>Re-parse XML → raw text"]
+        V_DET["_run_deterministic<br/>counts · empty · numbering · structure"]
+        V_COV["coverage ratio<br/>parsed_len / source_len"]
+        V_RPT["validation-report.json"]
+
+        V_SRC --> V_DET --> V_COV --> V_RPT
+    end
+
     PIPELINE --> PHASE_1
     PHASE_1 -->|"context dict"| PHASE_2
     PHASE_2 -->|"tmpdir: Path"| PHASE_3
-    PHASE_3 -->|"ParsedDocument"| PHASE_4
+    PHASE_3 -->|"ParsedDocument"| PHASE_V
+    PHASE_V -->|"always continues"| PHASE_4
 
-    PHASE_4 -->|"PipelineSummary"| SUMMARY["Pipeline Summary<br/>sparql: 4 ok | fetch: 1 ok<br/>articles: 113 | recitals: 180 | annexes: 13"]
+    PHASE_4 -->|"PipelineSummary"| SUMMARY["Pipeline Summary<br/>sparql: 4 ok | fetch: 1 ok | validation: 3 ok<br/>articles: 113 | recitals: 180 | annexes: 13"]
 
     style PHASE_1 fill:#1a1a2e,stroke:#e94560,color:#fff
     style PHASE_2 fill:#1a1a2e,stroke:#0f3460,color:#fff
     style PHASE_3 fill:#1a1a2e,stroke:#16213e,color:#fff
+    style PHASE_V fill:#1a1a2e,stroke:#c0392b,color:#fff
     style PHASE_4 fill:#1a1a2e,stroke:#1a8a42,color:#fff
 ```
 
@@ -81,11 +92,39 @@ python run.py --workflow workflows/eu-ai-act.yaml
 
 ## Output
 
-| Section  | Count | Path                   |
-|----------|-------|------------------------|
-| Articles | 113   | `corpus/articles/*.md` |
-| Recitals | 180   | `corpus/recitals/*.md` |
-| Annexes  | 13    | `corpus/annexes/*.md`  |
+```
+dist/eu-ai-act-{timestamp}/
+├── validation-report.json
+└── corpus/
+    ├── articles/*.md          (113)
+    ├── recitals/*.md          (180)
+    └── annexes/*.md           (13)
+```
+
+## Validation
+
+The pipeline runs a deterministic validation step between parse and convert (Phase 3.5). It operates in **advisory mode** — logs warnings and generates a report but never blocks the pipeline.
+
+Two independent text extraction paths are compared for each item:
+
+| Path                   | Method                          | Scope                       |
+|------------------------|---------------------------------|-----------------------------|
+| **Source** (validator) | `etree.tostring(method="text")` | All text nodes — exhaustive |
+| **Parsed** (parser)    | Selective tag traversal         | Only handled elements       |
+
+If the parser's structural traversal misses a sub-tree, the exhaustive source path catches it through the **coverage ratio** (`parsed_len / source_len`).
+
+**Checks:**
+
+| Check                | Type                                   | Threshold    |
+|----------------------|----------------------------------------|--------------|
+| Count validation     | articles=113, recitals=180, annexes=13 | exact match  |
+| Empty content        | items with no body text                | any = fail   |
+| Sequential numbering | gaps in article numbers                | any = warn   |
+| Structural integrity | missing title or chapter context       | any = warn   |
+| Coverage ratio       | `parsed_len / source_len` per item     | < 0.8 = warn |
+
+Configuration in `workflows/eu-ai-act.yaml` under the `validation:` section.
 
 ## RAG Configuration
 
@@ -122,6 +161,7 @@ eu-ai-act-rag/
 │       ├── parser.py
 │       ├── pipeline.py
 │       ├── result.py
+│       ├── validator.py
 │       └── sparql/
 │           ├── client.py
 │           ├── processor.py

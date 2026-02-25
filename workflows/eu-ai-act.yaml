@@ -227,6 +227,21 @@ postprocess:
     - find: "\uFEFF"      # BOM (Byte Order Mark)
       replace: ""
 
+## ── Validation workflow ──────────────────────────────────────
+## Data quality checks run between parse and convert.
+## Advisory mode: logs warnings, generates report, never blocks pipeline.
+validation:
+  enabled: true
+
+  ## Expected counts for EU AI Act (Regulation 2024/1689)
+  expected_articles: 113
+  expected_recitals: 180
+  expected_annexes: 13
+
+  ## Character coverage ratio threshold (parsed_len / source_len)
+  ## Below this threshold → warning
+  coverage_ratio_threshold: 0.8
+
 ## ── Corpus output workflow ─────────────────────────────────────
 corpus:
   ## Frontmatter template resolved at runtime.

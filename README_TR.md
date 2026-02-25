@@ -59,16 +59,27 @@ flowchart TD
         C_NORM --> C_WRITE
     end
 
+    subgraph PHASE_V ["Phase 3.5 — Validate (advisory)"]
+        V_SRC["_build_source_text_map<br/>XML yeniden parse → ham metin"]
+        V_DET["_run_deterministic<br/>sayı · boş · numaralandırma · yapı"]
+        V_COV["coverage ratio<br/>parsed_len / source_len"]
+        V_RPT["validation-report.json"]
+
+        V_SRC --> V_DET --> V_COV --> V_RPT
+    end
+
     PIPELINE --> PHASE_1
     PHASE_1 -->|"context dict"| PHASE_2
     PHASE_2 -->|"tmpdir: Path"| PHASE_3
-    PHASE_3 -->|"ParsedDocument"| PHASE_4
+    PHASE_3 -->|"ParsedDocument"| PHASE_V
+    PHASE_V -->|"her zaman devam eder"| PHASE_4
 
-    PHASE_4 -->|"PipelineSummary"| SUMMARY["Pipeline Summary<br/>sparql: 4 ok | fetch: 1 ok<br/>articles: 113 | recitals: 180 | annexes: 13"]
+    PHASE_4 -->|"PipelineSummary"| SUMMARY["Pipeline Summary<br/>sparql: 4 ok | fetch: 1 ok | validation: 3 ok<br/>articles: 113 | recitals: 180 | annexes: 13"]
 
     style PHASE_1 fill:#1a1a2e,stroke:#e94560,color:#fff
     style PHASE_2 fill:#1a1a2e,stroke:#0f3460,color:#fff
     style PHASE_3 fill:#1a1a2e,stroke:#16213e,color:#fff
+    style PHASE_V fill:#1a1a2e,stroke:#c0392b,color:#fff
     style PHASE_4 fill:#1a1a2e,stroke:#1a8a42,color:#fff
 ```
 
@@ -81,11 +92,39 @@ python run.py --workflow workflows/eu-ai-act.yaml
 
 ## Çıktı
 
-| Bölüm    | Adet | Dizin                  |
-|----------|------|------------------------|
-| Maddeler | 113  | `corpus/articles/*.md` |
-| Gerekçe  | 180  | `corpus/recitals/*.md` |
-| Ekler    | 13   | `corpus/annexes/*.md`  |
+```
+dist/eu-ai-act-{zaman_damgası}/
+├── validation-report.json
+└── corpus/
+    ├── articles/*.md          (113)
+    ├── recitals/*.md          (180)
+    └── annexes/*.md           (13)
+```
+
+## Doğrulama (Validation)
+
+Pipeline, parse ve convert aşamaları arasında deterministik bir doğrulama adımı (Phase 3.5) çalıştırır. **Advisory modda** çalışır — uyarı loglar ve rapor üretir ancak pipeline'ı asla durdurmaz.
+
+Her öğe için iki bağımsız metin çıkarma yolu karşılaştırılır:
+
+| Yol                        | Yöntem                          | Kapsam                         |
+|----------------------------|---------------------------------|--------------------------------|
+| **Kaynak** (validator)     | `etree.tostring(method="text")` | Tüm metin düğümleri — kapsamlı |
+| **Ayrıştırılmış** (parser) | Seçici tag traversal            | Yalnızca tanınan elementler    |
+
+Parser'ın yapısal taraması bir alt ağacı atlarsa, kapsamlı kaynak yolu bunu **kapsama oranı** (`parsed_len / source_len`) aracılığıyla yakalar.
+
+**Kontroller:**
+
+| Kontrol               | Tür                                  | Eşik                 |
+|-----------------------|--------------------------------------|----------------------|
+| Sayı doğrulama        | madde=113, gerekçe=180, ek=13        | tam eşleşme          |
+| Boş içerik            | gövdesi olmayan öğeler               | herhangi biri = fail |
+| Sıralı numaralandırma | madde numaralarında boşluk           | herhangi biri = warn |
+| Yapısal bütünlük      | eksik başlık veya bölüm bağlamı      | herhangi biri = warn |
+| Kapsama oranı         | öğe başına `parsed_len / source_len` | < 0.8 = warn         |
+
+Yapılandırma `workflows/eu-ai-act.yaml` dosyasındaki `validation:` bölümünde bulunur.
 
 ## RAG Yapılandırması
 
@@ -122,6 +161,7 @@ eu-ai-act-rag/
 │       ├── parser.py
 │       ├── pipeline.py
 │       ├── result.py
+│       ├── validator.py
 │       └── sparql/
 │           ├── client.py
 │           ├── processor.py
