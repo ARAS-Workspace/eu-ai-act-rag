@@ -46,6 +46,13 @@ app.get('/health', (c) => {
 	return c.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Public config endpoint — serves non-secret client configuration
+app.get('/api/config', (c) => {
+	return c.json({
+		turnstileSiteKey: c.env.TURNSTILE_SITE_KEY || '',
+	});
+});
+
 // Reverse proxy all requests to Streamlit container
 app.all('*', async (c) => {
 	const container = getContainer(c.env.STREAMLIT);

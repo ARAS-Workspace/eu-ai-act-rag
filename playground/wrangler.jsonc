@@ -44,4 +44,12 @@
 	},
 
 	"upload_source_maps": true
+
+	/**
+	 * Production Secrets (set via CLI):
+	 * npx wrangler secret put TURNSTILE_SITE_KEY
+	 *
+	 * TURNSTILE_SITE_KEY: Cloudflare Turnstile site key (public, served via /api/config)
+	 * @see https://developers.cloudflare.com/turnstile/get-started/
+	 */
 }

@@ -36,6 +36,7 @@ COPY app/app.py .
 COPY app/translations.py .
 COPY app/export_utils.py .
 COPY app/locales ./locales
+COPY app/components ./components
 COPY app/.streamlit ./.streamlit
 
 # Environment configuration

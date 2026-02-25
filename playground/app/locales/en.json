@@ -26,7 +26,8 @@
 	"errors": {
 		"connectionFailed": "Failed to connect to the worker. Make sure it is running.",
 		"emptyResponse": "No response received. Please try again.",
-		"requestFailed": "Request failed"
+		"requestFailed": "Request failed",
+		"turnstileFailed": "Security verification failed. Please try again."
 	},
 	"metadata": {
 		"duration": "Duration",

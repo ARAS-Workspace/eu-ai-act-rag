@@ -26,7 +26,8 @@
 	"errors": {
 		"connectionFailed": "Worker'a bağlanılamadı. Çalıştığından emin olun.",
 		"emptyResponse": "Yanıt alınamadı. Lütfen tekrar deneyin.",
-		"requestFailed": "İstek başarısız oldu"
+		"requestFailed": "İstek başarısız oldu",
+		"turnstileFailed": "Güvenlik doğrulaması başarısız. Lütfen tekrar deneyin."
 	},
 	"metadata": {
 		"duration": "Süre",

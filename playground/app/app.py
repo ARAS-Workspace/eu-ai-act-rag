@@ -13,9 +13,11 @@
 """EU AI Act RAG Playground — Streamlit chat interface for testing the AutoRAG worker."""
 
 import os
+from pathlib import Path
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as st_components
 from dotenv import load_dotenv
 
 from export_utils import (
@@ -27,10 +29,19 @@ from translations import get_locale, set_locale, t
 
 load_dotenv()
 
+ENVIRONMENT = os.getenv("ENVIRONMENT", "prod")
+
 WORKER_URL = (
-    "https://eu-ai-act-rag-worker.aras.tc" # "http://localhost:8791"
-    if os.getenv("ENVIRONMENT", "prod") == "dev"
+    "http://localhost:8791"
+    if ENVIRONMENT == "dev"
     else "https://eu-ai-act-rag-worker.aras.tc"
+)
+
+TURNSTILE_ENABLED = ENVIRONMENT != "dev"
+
+_turnstile_component = st_components.declare_component(
+    "turnstile",
+    path=str(Path(__file__).parent / "components" / "turnstile"),
 )
 
 ALLOWED_MODELS = [
@@ -87,6 +98,8 @@ if "pending" not in st.session_state:
     st.session_state["pending"] = False
 if "last_debug" not in st.session_state:
     st.session_state["last_debug"] = None
+if "turnstile_reset" not in st.session_state:
+    st.session_state["turnstile_reset"] = 0
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +226,17 @@ for msg in st.session_state["messages"]:
         render_sources(msg["sources"], msg.get("metadata", {}))
 
 # ---------------------------------------------------------------------------
+# Turnstile Widget
+# ---------------------------------------------------------------------------
+
+if TURNSTILE_ENABLED:
+    st.session_state["turnstile_token"] = _turnstile_component(
+        reset_count=st.session_state["turnstile_reset"],
+        key="turnstile",
+        default=None,
+    )
+
+# ---------------------------------------------------------------------------
 # Chat Input
 # ---------------------------------------------------------------------------
 
@@ -225,6 +249,7 @@ if prompt := st.chat_input(
 
 if st.session_state["pending"]:
     with st.chat_message("assistant"):
+        # noinspection PyTypeChecker
         with st.spinner(t("chat.thinking")):
             try:
                 payload = {
@@ -244,12 +269,21 @@ if st.session_state["pending"]:
 
                 url = f"{WORKER_URL}/api/v1/chat/completions"
 
-                resp = requests.post(url, json=payload, timeout=60)
+                headers = {}
+                if TURNSTILE_ENABLED:
+                    token = st.session_state.get("turnstile_token")
+                    if token:
+                        headers["X-Turnstile-Token"] = token
+
+                resp = requests.post(url, json=payload, headers=headers, timeout=60)
+
+                if TURNSTILE_ENABLED:
+                    st.session_state["turnstile_reset"] += 1
 
                 # Store debug info in session state
                 try:
                     resp_body = resp.json()
-                except Exception:
+                except (ValueError, requests.JSONDecodeError):
                     resp_body = resp.text[:2000]
 
                 st.session_state["last_debug"] = {
