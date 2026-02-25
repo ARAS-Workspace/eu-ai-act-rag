@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MIT
+#  █████╗ ██████╗  █████╗ ███████╗
+# ██╔══██╗██╔══██╗██╔══██╗██╔════╝
+# ███████║██████╔╝███████║███████╗
+# ██╔══██║██╔══██╗██╔══██║╚════██║
+# ██║  ██║██║  ██║██║  ██║███████║
+# ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
+# Copyright (C) 2026 Riza Emre ARAS <r.emrearas@proton.me>
+# EU AI Act RAG — MIT License
+
+name: Deploy R2 Object Storage
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  deploy:
+    needs: build
+    runs-on: self-hosted
+
+    steps:
+      - name: Download corpus artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: corpus
+          path: dist
+
+      - name: Upload corpus to R2
+        run: |
+          echo "Uploading corpus to R2 bucket: eu-ai-act-rag"
+          rclone copy dist/ r2:eu-ai-act-rag --progress
+          echo "✓ Corpus upload completed"
