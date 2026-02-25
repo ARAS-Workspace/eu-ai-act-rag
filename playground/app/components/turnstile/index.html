@@ -21,7 +21,7 @@
       }
       #cf-turnstile {
         display: flex;
-        justify-content: center;
+        justify-content: flex-start;
       }
     </style>
   </head>
@@ -113,9 +113,11 @@
               theme: "auto",
               callback: function (/** @type {string} */ token) {
                 setComponentValue(token);
+                setFrameHeight(0);
               },
               "expired-callback": function () {
                 setComponentValue(null);
+                setFrameHeight(document.body.scrollHeight || 65);
               },
               "error-callback": function () {
                 setComponentValue(null);
@@ -135,11 +137,10 @@
             if (resetCount !== lastResetCount) {
               lastResetCount = resetCount;
               if (widgetId !== null && siteKey) {
+                setFrameHeight(document.body.scrollHeight || 65);
                 /** @type {any} */ (window).turnstile.reset(widgetId);
               }
             }
-
-            setFrameHeight(siteKey ? document.body.scrollHeight || 65 : 0);
           });
 
           componentReady();
