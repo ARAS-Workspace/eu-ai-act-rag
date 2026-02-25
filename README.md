@@ -87,6 +87,23 @@ python run.py --workflow workflows/eu-ai-act.yaml
 | Recitals | 180   | `corpus/recitals/*.md` |
 | Annexes  | 13    | `corpus/annexes/*.md`  |
 
+## RAG Configuration
+
+| Parameter        | Value                                      |
+|------------------|--------------------------------------------|
+| Embedding Model  | `@cf/qwen/qwen3-embedding-0.6b`            |
+| Generation Model | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` |
+| Chunk Size       | 512 tokens                                 |
+| Chunk Overlap    | 10%                                        |
+| Vector Store     | Cloudflare Vectorize (1024 dimensions)     |
+| Object Storage   | Cloudflare R2                              |
+
+### Cloudflare Documentation
+
+- [AI Search](https://developers.cloudflare.com/ai-search/)
+- [Vectorize](https://developers.cloudflare.com/vectorize/)
+- [R2 Object Storage](https://developers.cloudflare.com/r2/)
+
 ## Project Structure
 
 ```
