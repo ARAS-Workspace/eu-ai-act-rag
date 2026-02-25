@@ -408,8 +408,13 @@ def parse_document(source_dir: Path) -> Result[ParsedDocument]:
     """Parse the complete Formex document from extracted XML files."""
     doc = ParsedDocument()
 
-    # Main ACT file
-    act_files = sorted(source_dir.glob("*.000101.fmx.xml"))
+    # Main ACT file — matches both Formex naming conventions:
+    #   AI Act:  *.000101.fmx.xml
+    #   GDPR:    *.01000101.xml
+    act_files = sorted(
+        f for f in source_dir.glob("*.xml")
+        if "0101" in f.name and ".doc." not in f.name and ".toc." not in f.name
+    )
     if not act_files:
         return Fail(error=f"No main ACT file found in {source_dir}")
 
@@ -423,10 +428,13 @@ def parse_document(source_dir: Path) -> Result[ParsedDocument]:
     doc.articles = parse_articles(root)
     doc.recitals = parse_recitals(root)
 
-    # Annex files (*.01XXXX.fmx.xml, excluding toc and doc)
+    # Annex files — any XML that is not the main ACT, toc, or doc file
+    act_names = {f.name for f in act_files}
     annex_files = sorted(
-        f for f in source_dir.glob("*.fmx.xml")
-        if ".toc." not in f.name and ".doc." not in f.name and ".000101." not in f.name
+        f for f in source_dir.glob("*.xml")
+        if ".toc." not in f.name
+        and ".doc." not in f.name
+        and f.name not in act_names
     )
     for annex_path in annex_files:
         result = parse_annex(annex_path)

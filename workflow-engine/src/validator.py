@@ -93,7 +93,10 @@ def _build_source_text_map(source_dir: Path) -> dict[str, str]:
     """
     source_map: dict[str, str] = {}
 
-    act_files = sorted(source_dir.glob("*.000101.fmx.xml"))
+    act_files = sorted(
+        f for f in source_dir.glob("*.xml")
+        if "0101" in f.name and ".doc." not in f.name and ".toc." not in f.name
+    )
     if not act_files:
         return source_map
 
@@ -115,12 +118,13 @@ def _build_source_text_map(source_dir: Path) -> dict[str, str]:
         number = _text(np.find("NO.P")).strip("()")
         source_map[f"recital:{number}"] = _text(consid)
 
+    act_names = {f.name for f in act_files}
     annex_files = sorted(
         f
-        for f in source_dir.glob("*.fmx.xml")
+        for f in source_dir.glob("*.xml")
         if ".toc." not in f.name
         and ".doc." not in f.name
-        and ".000101." not in f.name
+        and f.name not in act_names
     )
     for annex_path in annex_files:
         try:
