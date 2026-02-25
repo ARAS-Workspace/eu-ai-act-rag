@@ -8,7 +8,7 @@
 # Copyright (C) 2026 Riza Emre ARAS <r.emrearas@proton.me>
 # EU AI Act RAG — MIT License
 
-name: Release
+name: Release Corpus
 
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ on:
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/build-corpus.yml
 
   release:
     needs: build

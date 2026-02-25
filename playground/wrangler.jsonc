@@ -1,0 +1,47 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "eu-ai-act-rag-playground",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-11-18",
+	"compatibility_flags": ["nodejs_compat"],
+
+	// Environment configuration
+	"vars": {
+		"ENVIRONMENT": "prod"
+	},
+
+	// Container configuration for Streamlit
+	"containers": [
+		{
+			"class_name": "StreamlitContainer",
+			"image": "./Dockerfile",
+			"instance_type": "basic",
+			"max_instances": 3
+		}
+	],
+
+	// Durable Objects binding
+	"durable_objects": {
+		"bindings": [
+			{
+				"class_name": "StreamlitContainer",
+				"name": "STREAMLIT"
+			}
+		]
+	},
+
+	// Migrations
+	"migrations": [
+		{
+			"new_sqlite_classes": ["StreamlitContainer"],
+			"tag": "v1"
+		}
+	],
+
+	// Observability
+	"observability": {
+		"enabled": true
+	},
+
+	"upload_source_maps": true
+}

@@ -1,0 +1,57 @@
+// SPDX-License-Identifier: MIT
+/**
+ *  █████╗ ██████╗  █████╗ ███████╗
+ * ██╔══██╗██╔══██╗██╔══██╗██╔════╝
+ * ███████║██████╔╝███████║███████╗
+ * ██╔══██║██╔══██╗██╔══██║╚════██║
+ * ██║  ██║██║  ██║██║  ██║███████║
+ * ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
+ *
+ * Copyright (C) 2026 Riza Emre ARAS <r.emrearas@proton.me>
+ * EU AI Act RAG Worker — MIT License
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "eu-ai-act-rag-worker",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-11-18",
+	"workers_dev": false,
+	"preview_urls": false,
+	"observability": {
+		"enabled": true
+	},
+	/**
+	 * KV Namespace for rate limiting
+	 */
+	"kv_namespaces": [
+		{
+			"binding": "EU_AI_ACT_RAG_WORKER_KV",
+			"id": "417ab82c652e4e7696f1ecc70168f6a5"
+		}
+	],
+	/**
+	 * AI binding for Workers AI and AI Search (AutoRAG)
+	 */
+	"ai": {
+		"binding": "AI",
+		"remote": true
+	},
+	/**
+	 * Build configuration for markdown prompts
+	 */
+	"rules": [
+		{
+			"type": "Text",
+			"globs": [
+				"**/*.md"
+			],
+			"fallthrough": true
+		}
+	]
+	/**
+	 * Production Secrets (set via CLI):
+	 * npx wrangler secret put AISEARCH_NAME
+	 *
+	 * Development: Use .dev.vars file for local environment variables
+	 */
+}

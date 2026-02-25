@@ -1,0 +1,43 @@
+{
+	"app": {
+		"title": "EU AI Act RAG Playground",
+		"pageIcon": "EU"
+	},
+	"chat": {
+		"placeholder": "Ask a question about the EU AI Act...",
+		"thinking": "Searching EU AI Act corpus...",
+		"welcome": "Ask me anything about the **EU Artificial Intelligence Act** (Regulation 2024/1689). I can help you find specific articles, recitals, annexes, and explain legal provisions.",
+		"examples": "**Example questions:**\n- What are the prohibited AI practices under Article 5?\n- What obligations do high-risk AI systems have?\n- What are the penalties for non-compliance?\n- How does the AI Act define an AI system?"
+	},
+	"sources": {
+		"title": "Sources",
+		"score": "match",
+		"filename": "File",
+		"noSources": "No sources found."
+	},
+	"sidebar": {
+		"searchOptions": "Search Options",
+		"model": "Generation Model",
+		"rewriteQuery": "Query Rewriting",
+		"reRanking": "Semantic Reranking",
+		"maxResults": "Max Results",
+		"scoreThreshold": "Score Threshold"
+	},
+	"errors": {
+		"connectionFailed": "Failed to connect to the worker. Make sure it is running.",
+		"emptyResponse": "No response received. Please try again.",
+		"requestFailed": "Request failed"
+	},
+	"metadata": {
+		"duration": "Duration",
+		"searchQuery": "Search Query",
+		"sourcesCount": "Sources"
+	},
+	"export": {
+		"title": "Export",
+		"markdown": "Markdown (.md)",
+		"json": "JSON (.json)",
+		"markdownTooltip": "Download in readable format",
+		"jsonTooltip": "Download in machine-readable format"
+	}
+}

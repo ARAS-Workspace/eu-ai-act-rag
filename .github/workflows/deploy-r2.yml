@@ -8,14 +8,14 @@
 # Copyright (C) 2026 Riza Emre ARAS <r.emrearas@proton.me>
 # EU AI Act RAG — MIT License
 
-name: Deploy R2 Object Storage
+name: Deploy Corpus R2
 
 on:
   workflow_dispatch:
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yml
+    uses: ./.github/workflows/build-corpus.yml
 
   deploy:
     needs: build

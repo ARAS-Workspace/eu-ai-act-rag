@@ -1,0 +1,43 @@
+{
+	"app": {
+		"title": "EU AI Act RAG Playground",
+		"pageIcon": "EU"
+	},
+	"chat": {
+		"placeholder": "EU AI Act hakkında bir soru sorun...",
+		"thinking": "EU AI Act corpus'u araştırılıyor...",
+		"welcome": "**AB Yapay Zekâ Yasası** (Yönetmelik 2024/1689) hakkında bana her şeyi sorabilirsiniz. Belirli maddeleri, gerekçeleri, ekleri bulmanıza ve yasal hükümleri açıklamanıza yardımcı olabilirim.",
+		"examples": "**Örnek sorular:**\n- Madde 5 kapsamında yasaklanan yapay zekâ uygulamaları nelerdir?\n- Yüksek riskli yapay zekâ sistemlerinin yükümlülükleri nelerdir?\n- Uyumsuzluk için cezalar nelerdir?\n- Yapay zekâ sistemi nasıl tanımlanır?"
+	},
+	"sources": {
+		"title": "Kaynaklar",
+		"score": "eşleşme",
+		"filename": "Dosya",
+		"noSources": "Kaynak bulunamadı."
+	},
+	"sidebar": {
+		"searchOptions": "Arama Seçenekleri",
+		"model": "Üretim Modeli",
+		"rewriteQuery": "Sorgu Yeniden Yazımı",
+		"reRanking": "Semantik Yeniden Sıralama",
+		"maxResults": "Maksimum Sonuç",
+		"scoreThreshold": "Puan Eşiği"
+	},
+	"errors": {
+		"connectionFailed": "Worker'a bağlanılamadı. Çalıştığından emin olun.",
+		"emptyResponse": "Yanıt alınamadı. Lütfen tekrar deneyin.",
+		"requestFailed": "İstek başarısız oldu"
+	},
+	"metadata": {
+		"duration": "Süre",
+		"searchQuery": "Arama Sorgusu",
+		"sourcesCount": "Kaynak Sayısı"
+	},
+	"export": {
+		"title": "Dışa Aktar",
+		"markdown": "Markdown (.md)",
+		"json": "JSON (.json)",
+		"markdownTooltip": "Okunabilir formatta indir",
+		"jsonTooltip": "Makine tarafından okunabilir formatta indir"
+	}
+}

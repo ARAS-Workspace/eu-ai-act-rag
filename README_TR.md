@@ -108,9 +108,9 @@ python run.py --workflow workflows/eu-ai-act.yaml
 
 ```
 eu-ai-act-rag/
-├── run.py                     # Giriş noktası
+├── run.py                          # Giriş noktası
 ├── workflows/
-│   └── eu-ai-act.yaml         # Workflow tanımı
+│   └── eu-ai-act.yaml             # Workflow tanımı
 ├── workflow-engine/
 │   ├── requirements.in
 │   ├── requirements.txt
@@ -126,14 +126,50 @@ eu-ai-act-rag/
 │           ├── client.py
 │           ├── processor.py
 │           └── queries.py
-└── dist/                      # Çıktı (gitignore)
+├── worker/                         # Cloudflare Worker (AutoRAG API)
+│   ├── wrangler.jsonc
+│   ├── package.json
+│   └── src/
+│       ├── index.ts
+│       ├── config.ts
+│       ├── types.ts
+│       ├── translations.ts
+│       ├── ai/
+│       │   ├── manager.ts
+│       │   └── prompts/
+│       │       └── system-prompt.md
+│       ├── middleware/
+│       │   └── ratelimit.ts
+│       ├── validation/
+│       │   ├── request.ts
+│       │   └── schema.ts
+│       └── utils/
+│           ├── errors.ts
+│           └── logging.ts
+├── playground/                     # Streamlit - Cloudflare Containers
+│   ├── wrangler.jsonc
+│   ├── package.json
+│   ├── Dockerfile
+│   ├── start.sh
+│   ├── src/
+│   │   └── index.ts               # Hono reverse proxy
+│   └── app/
+│       ├── app.py
+│       ├── translations.py
+│       ├── export_utils.py
+│       ├── locales/
+│       │   ├── en.json
+│       │   └── tr.json
+│       └── .streamlit/
+│           └── config.toml
+└── dist/                           # Çıktı (gitignore)
 ```
 
 ## CI/CD
 
 ```mermaid
 flowchart TD
-    subgraph BUILD ["build.yml — Build Corpus"]
+    subgraph BUILD ["build-corpus.yml — Build Corpus"]
         direction TB
         B_TRIGGER["push main / pull_request / workflow_call"]
         B_CHECKOUT["actions/checkout@v4"]
@@ -145,7 +181,7 @@ flowchart TD
         B_TRIGGER --> B_CHECKOUT --> B_PYTHON --> B_DEPS --> B_RUN --> B_ARTIFACT
     end
 
-    subgraph DEPLOY ["deploy.yml — Deploy R2"]
+    subgraph DEPLOY_R2 ["deploy-r2.yml — Deploy Corpus R2"]
         direction TB
         D_TRIGGER["workflow_dispatch"]
         D_DOWNLOAD["actions/download-artifact@v4"]
@@ -155,7 +191,7 @@ flowchart TD
         D_TRIGGER --> D_DOWNLOAD --> D_CLEAR --> D_UPLOAD
     end
 
-    subgraph RELEASE ["release.yml — GitHub Release"]
+    subgraph RELEASE ["release-corpus.yml — Release Corpus"]
         direction TB
         R_TRIGGER["workflow_dispatch<br/>input: version"]
         R_DOWNLOAD["actions/download-artifact@v4"]
@@ -165,19 +201,50 @@ flowchart TD
         R_TRIGGER --> R_DOWNLOAD --> R_TAR --> R_GH
     end
 
-    BUILD -->|"corpus artifact"| DEPLOY
+    subgraph DEPLOY_WORKER ["deploy-worker.yml — Deploy Worker"]
+        direction TB
+        W_TRIGGER["workflow_dispatch"]
+        W_CHECKOUT["actions/checkout@v4"]
+        W_NODE["actions/setup-node@v4<br/>Node.js 22"]
+        W_ENV["Create .env<br/>CLOUDFLARE_API_TOKEN<br/>CLOUDFLARE_ACCOUNT_ID"]
+        W_INSTALL["npm install"]
+        W_TYPEGEN["npm run cf-typegen"]
+        W_DEPLOY["npm run deploy"]
+
+        W_TRIGGER --> W_CHECKOUT --> W_NODE --> W_ENV --> W_INSTALL --> W_TYPEGEN --> W_DEPLOY
+    end
+
+    subgraph DEPLOY_PLAYGROUND ["deploy-playground.yml — Deploy Playground"]
+        direction TB
+        P_TRIGGER["workflow_dispatch"]
+        P_CHECKOUT["actions/checkout@v4"]
+        P_NODE["actions/setup-node@v4<br/>Node.js 22"]
+        P_DOCKER["docker/setup-buildx-action@v3<br/>linux/amd64"]
+        P_ENV["Create .env<br/>CLOUDFLARE_API_TOKEN<br/>CLOUDFLARE_ACCOUNT_ID"]
+        P_INSTALL["npm install"]
+        P_TYPEGEN["npm run cf-typegen"]
+        P_DEPLOY["npm run deploy"]
+
+        P_TRIGGER --> P_CHECKOUT --> P_NODE --> P_DOCKER --> P_ENV --> P_INSTALL --> P_TYPEGEN --> P_DEPLOY
+    end
+
+    BUILD -->|"corpus artifact"| DEPLOY_R2
     BUILD -->|"corpus artifact"| RELEASE
 
     style BUILD fill:#1a1a2e,stroke:#e94560,color:#fff
-    style DEPLOY fill:#1a1a2e,stroke:#0f3460,color:#fff
+    style DEPLOY_R2 fill:#1a1a2e,stroke:#0f3460,color:#fff
     style RELEASE fill:#1a1a2e,stroke:#1a8a42,color:#fff
+    style DEPLOY_WORKER fill:#1a1a2e,stroke:#f5a623,color:#fff
+    style DEPLOY_PLAYGROUND fill:#1a1a2e,stroke:#7b68ee,color:#fff
 ```
 
-| Workflow      | Tetikleyici                | Runner        | Çıktı                  |
-|---------------|----------------------------|---------------|------------------------|
-| `build.yml`   | push, pull_request, manual | ubuntu-latest | corpus artifact        |
-| `deploy.yml`  | manual                     | self-hosted   | R2 bucket upload       |
-| `release.yml` | manual (version input)     | ubuntu-latest | GitHub Release v-x.y.z |
+| Workflow                 | Tetikleyici                | Runner        | Çıktı                  |
+|--------------------------|----------------------------|---------------|------------------------|
+| `build-corpus.yml`       | push, pull_request, manual | ubuntu-latest | corpus artifact        |
+| `deploy-r2.yml`          | manual                     | self-hosted   | R2 bucket yüklemesi    |
+| `deploy-worker.yml`      | manual                     | self-hosted   | Cloudflare Worker      |
+| `deploy-playground.yml`  | manual                     | self-hosted   | Cloudflare Container   |
+| `release-corpus.yml`     | manual (version input)     | ubuntu-latest | GitHub Release v-x.y.z |
 
 ## Lisans
 
