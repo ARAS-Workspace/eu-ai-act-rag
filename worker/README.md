@@ -8,6 +8,15 @@ POST /api/v1/chat/completions
 
 ## Request
 
+### Headers
+
+| Header              | Required | Description                                                                 |
+|---------------------|----------|-----------------------------------------------------------------------------|
+| `Content-Type`      | yes      | Must be `application/json`.                                                 |
+| `X-Turnstile-Token` | yes*     | Cloudflare Turnstile verification token. *Skipped in development mode.      |
+
+### Body
+
 ```json
 {
   "messages": [
@@ -103,6 +112,18 @@ POST /api/v1/chat/completions
 }
 ```
 
+### 403 Forbidden
+
+```json
+{
+  "error": {
+    "type": "forbidden",
+    "message": "Security verification required"
+  },
+  "status": 403
+}
+```
+
 ### 429 Too Many Requests
 
 ```json
@@ -133,6 +154,7 @@ POST /api/v1/chat/completions
 ```bash
 curl -X POST https://<worker-domain>/api/v1/chat/completions \
   -H "Content-Type: application/json" \
+  -H "X-Turnstile-Token: <turnstile-token>" \
   -d '{
     "messages": [
       { "role": "user", "content": "What obligations do providers of high-risk AI have?" }

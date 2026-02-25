@@ -8,6 +8,15 @@ POST /api/v1/chat/completions
 
 ## İstek
 
+### Başlıklar (Headers)
+
+| Başlık              | Zorunlu  | Açıklama                                                                       |
+|---------------------|----------|--------------------------------------------------------------------------------|
+| `Content-Type`      | evet     | `application/json` olmalıdır.                                                  |
+| `X-Turnstile-Token` | evet*    | Cloudflare Turnstile doğrulama tokeni. *Geliştirme modunda atlanır.            |
+
+### Gövde (Body)
+
 ```json
 {
   "messages": [
@@ -103,6 +112,18 @@ POST /api/v1/chat/completions
 }
 ```
 
+### 403 Forbidden
+
+```json
+{
+  "error": {
+    "type": "forbidden",
+    "message": "Güvenlik doğrulaması gerekli"
+  },
+  "status": 403
+}
+```
+
 ### 429 Too Many Requests
 
 ```json
@@ -133,6 +154,7 @@ POST /api/v1/chat/completions
 ```bash
 curl -X POST https://<worker-domain>/api/v1/chat/completions \
   -H "Content-Type: application/json" \
+  -H "X-Turnstile-Token: <turnstile-token>" \
   -d '{
     "messages": [
       { "role": "user", "content": "Yüksek riskli yapay zekâ sağlayıcılarının yükümlülükleri nelerdir?" }
