@@ -28,6 +28,12 @@ jobs:
           name: corpus
           path: dist
 
+      - name: Clear R2 bucket
+        run: |
+          echo "Clearing R2 bucket: eu-ai-act-rag"
+          rclone delete r2:eu-ai-act-rag --rmdirs
+          echo "✓ Bucket cleared"
+
       - name: Find corpus directory
         id: corpus
         run: echo "path=$(find dist -type d -name corpus | head -1)" >> "$GITHUB_OUTPUT"
