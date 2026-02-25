@@ -28,8 +28,12 @@ jobs:
           name: corpus
           path: dist
 
+      - name: Find corpus directory
+        id: corpus
+        run: echo "path=$(find dist -type d -name corpus | head -1)" >> "$GITHUB_OUTPUT"
+
       - name: Upload corpus to R2
         run: |
           echo "Uploading corpus to R2 bucket: eu-ai-act-rag"
-          rclone copy dist/ r2:eu-ai-act-rag --progress
+          rclone copy ${{ steps.corpus.outputs.path }}/ r2:eu-ai-act-rag --progress
           echo "✓ Corpus upload completed"
