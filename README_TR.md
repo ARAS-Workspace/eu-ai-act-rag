@@ -129,6 +129,56 @@ eu-ai-act-rag/
 └── dist/                      # Çıktı (gitignore)
 ```
 
+## CI/CD
+
+```mermaid
+flowchart TD
+    subgraph BUILD ["build.yml — Build Corpus"]
+        direction TB
+        B_TRIGGER["push main / pull_request / workflow_call"]
+        B_CHECKOUT["actions/checkout@v4"]
+        B_PYTHON["actions/setup-python@v5<br/>Python 3.12"]
+        B_DEPS["pip install --require-hashes"]
+        B_RUN["python run.py<br/>--workflow workflows/eu-ai-act.yaml"]
+        B_ARTIFACT["actions/upload-artifact@v4<br/>name: corpus"]
+
+        B_TRIGGER --> B_CHECKOUT --> B_PYTHON --> B_DEPS --> B_RUN --> B_ARTIFACT
+    end
+
+    subgraph DEPLOY ["deploy.yml — Deploy R2"]
+        direction TB
+        D_TRIGGER["workflow_dispatch"]
+        D_DOWNLOAD["actions/download-artifact@v4"]
+        D_CLEAR["rclone delete r2:eu-ai-act-rag"]
+        D_UPLOAD["rclone copy corpus/ r2:eu-ai-act-rag"]
+
+        D_TRIGGER --> D_DOWNLOAD --> D_CLEAR --> D_UPLOAD
+    end
+
+    subgraph RELEASE ["release.yml — GitHub Release"]
+        direction TB
+        R_TRIGGER["workflow_dispatch<br/>input: version"]
+        R_DOWNLOAD["actions/download-artifact@v4"]
+        R_TAR["tar -czf corpus.tar.gz"]
+        R_GH["softprops/action-gh-release@v2<br/>tag: v-{version}"]
+
+        R_TRIGGER --> R_DOWNLOAD --> R_TAR --> R_GH
+    end
+
+    BUILD -->|"corpus artifact"| DEPLOY
+    BUILD -->|"corpus artifact"| RELEASE
+
+    style BUILD fill:#1a1a2e,stroke:#e94560,color:#fff
+    style DEPLOY fill:#1a1a2e,stroke:#0f3460,color:#fff
+    style RELEASE fill:#1a1a2e,stroke:#1a8a42,color:#fff
+```
+
+| Workflow      | Tetikleyici                | Runner        | Çıktı                  |
+|---------------|----------------------------|---------------|------------------------|
+| `build.yml`   | push, pull_request, manual | ubuntu-latest | corpus artifact        |
+| `deploy.yml`  | manual                     | self-hosted   | R2 bucket upload       |
+| `release.yml` | manual (version input)     | ubuntu-latest | GitHub Release v-x.y.z |
+
 ## Lisans
 
 MIT Lisansı — Telif Hakkı (C) 2026 Rıza Emre ARAS
