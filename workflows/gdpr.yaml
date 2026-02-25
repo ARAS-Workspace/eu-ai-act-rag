@@ -1,0 +1,252 @@
+#file: noinspection HttpUrlsUsage
+## ──────────────────────────────────────────────────────────────
+##  █████╗ ██████╗  █████╗ ███████╗
+## ██╔══██╗██╔══██╗██╔══██╗██╔════╝
+## ███████║██████╔╝███████║███████╗
+## ██╔══██║██╔══██╗██╔══██║╚════██║
+## ██║  ██║██║  ██║██║  ██║███████║
+## ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
+## Copyright (C) 2026 Riza Emre ARAS <r.emrearas@proton.me>
+## EU AI Act RAG — MIT License
+## ──────────────────────────────────────────────────────────────
+##
+## GDPR — Corpus Builder Workflow
+##
+## General Data Protection Regulation (EU) 2016/679
+## 99 articles · 173 recitals · no annexes
+##
+## Usage:
+##   python run.py --workflow workflows/gdpr.yaml
+## ──────────────────────────────────────────────────────────────
+
+## ── Source definition ──────────────────────────────────────────
+source:
+  celex: "32016R0679"
+  title: "GDPR"
+  language: "ENG"
+  language_code: "en"
+
+## ── SPARQL workflow ────────────────────────────────────────────
+sparql:
+  endpoint: "https://publications.europa.eu/webapi/rdf/sparql"
+  timeout: 30
+
+  steps:
+
+    ## ── Step 1: Discovery ────────────────────────────────────
+    - name: discover
+      required: false
+      description: "Discover available CDM properties"
+      template: |
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        SELECT ?p ?o WHERE {
+          ?s cdm:resource_legal_id_celex "{{celex}}" .
+          ?s ?p ?o .
+        } LIMIT 50
+      script: |
+        output = [
+            {"predicate": b["p"]["value"], "object": b["o"]["value"]}
+            for b in bindings
+        ]
+
+    ## ── Step 2: Metadata ─────────────────────────────────────
+    - name: metadata
+      required: true
+      description: "Document metadata + Formex item URI for ZIP download"
+      template: |
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        SELECT DISTINCT ?work ?title ?date ?force ?manif ?manif_type ?item ?mime
+        WHERE {
+          ?work cdm:resource_legal_id_celex "{{celex}}"^^xsd:string .
+          OPTIONAL { ?work cdm:resource_legal_date_signature ?date . }
+          OPTIONAL { ?work cdm:resource_legal_in-force ?force . }
+          OPTIONAL {
+            ?expr cdm:expression_belongs_to_work ?work .
+            ?expr cdm:expression_uses_language <http://publications.europa.eu/resource/authority/language/{{language}}> .
+            ?expr cdm:expression_title ?title .
+            ?manif cdm:manifestation_manifests_expression ?expr .
+            ?manif cdm:manifestation_type ?manif_type .
+            OPTIONAL {
+              ?item cdm:item_belongs_to_manifestation ?manif .
+              ?item cdm:manifestationMimeType ?mime .
+            }
+          }
+        }
+      script: |
+        def val(row, key):
+            return row.get(key, {}).get("value", "")
+
+        meta = {
+            "work_uri": "",
+            "title": "",
+            "date": "",
+            "in_force": False,
+            "manifestations": [],
+        }
+        seen = set()
+
+        for row in bindings:
+            if not meta["work_uri"]:
+                meta["work_uri"] = val(row, "work")
+            if not meta["title"]:
+                meta["title"] = val(row, "title")
+            if not meta["date"]:
+                meta["date"] = val(row, "date")
+
+            force = val(row, "force")
+            if force:
+                meta["in_force"] = force.lower() in ("true", "yes", "1")
+
+            manif = val(row, "manif")
+            mtype = val(row, "manif_type")
+            item = val(row, "item")
+            mime = val(row, "mime")
+            key = f"{manif}|{item}"
+            if manif and key not in seen:
+                meta["manifestations"].append({
+                    "uri": manif,
+                    "type": mtype,
+                    "item_uri": item,
+                    "mime": mime,
+                })
+                seen.add(key)
+
+        output = meta
+
+    ## ── Step 3: Cross-references ─────────────────────────────
+    - name: cross_references
+      required: false
+      description: "Documents cited by this work"
+      template: |
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        SELECT DISTINCT ?ref_celex ?ref_title
+        WHERE {
+          ?work cdm:resource_legal_id_celex "{{celex}}"^^xsd:string .
+          ?work cdm:work_cites_work ?ref_work .
+          OPTIONAL { ?ref_work cdm:resource_legal_id_celex ?ref_celex . }
+          OPTIONAL {
+            ?ref_expr cdm:expression_belongs_to_work ?ref_work .
+            ?ref_expr cdm:expression_uses_language <http://publications.europa.eu/resource/authority/language/{{language}}> .
+            ?ref_expr cdm:expression_title ?ref_title .
+          }
+        }
+      script: |
+        seen = set()
+        refs = []
+        for row in bindings:
+            celex = row.get("ref_celex", {}).get("value", "")
+            title = row.get("ref_title", {}).get("value", "")
+            if celex and celex not in seen:
+                refs.append({"celex": celex, "title": title})
+                seen.add(celex)
+        output = refs
+
+    ## ── Step 4: EuroVoc ──────────────────────────────────────
+    - name: eurovoc
+      required: false
+      description: "EuroVoc subject labels"
+      template: |
+        PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+        SELECT DISTINCT ?subject_label
+        WHERE {
+          ?work cdm:resource_legal_id_celex "{{celex}}"^^xsd:string .
+          ?work cdm:work_is_about_concept_eurovoc ?concept .
+          ?concept skos:prefLabel ?subject_label .
+          FILTER(LANG(?subject_label) = "{{language_code}}")
+        }
+      script: |
+        seen = set()
+        labels = []
+        for row in bindings:
+            label = row.get("subject_label", {}).get("value", "")
+            if label and label not in seen:
+                labels.append(label)
+                seen.add(label)
+        output = labels
+
+## ── Fetch workflow ─────────────────────────────────────────────
+fetch:
+  uri_select_script: |
+    manifests = context["metadata"]["manifestations"]
+    selected = None
+    for m in manifests:
+        if m.get("type") == "fmx4":
+            selected = m["uri"]
+            break
+    if not selected and manifests:
+        selected = manifests[0]["uri"]
+    output = selected
+
+  accept_header: "application/zip"
+  content_type: "zip"
+  retry:
+    attempts: 3
+    delay_seconds: 5
+
+## ── Postprocess workflow ───────────────────────────────────────
+postprocess:
+  normalize:
+    - find: "\u00A0"      # NBSP (Non-Breaking Space)
+      replace: " "
+    - find: "\u2007"      # Figure Space
+      replace: " "
+    - find: "\u202F"      # Narrow NBSP
+      replace: " "
+    - find: "\u200B"      # Zero-Width Space
+      replace: ""
+    - find: "\uFEFF"      # BOM (Byte Order Mark)
+      replace: ""
+
+## ── Validation workflow ──────────────────────────────────────
+validation:
+  enabled: true
+
+  ## Expected counts for GDPR (Regulation 2016/679)
+  expected_articles: 99
+  expected_recitals: 173
+  expected_annexes: 0
+
+  coverage_ratio_threshold: 0.8
+
+## ── Corpus output workflow ─────────────────────────────────────
+corpus:
+  frontmatter_base:
+    language: "{{language_code}}"
+    source:
+      celex: "{{celex}}"
+      cellar_uri: "{{context.metadata.work_uri}}"
+      retrieved_at: "{{timestamp}}"
+
+  sections:
+    articles:
+      dir: "articles"
+      filename: "article-{number}.md"
+      heading: "Article {number} — {title}"
+      frontmatter:
+        type: "article"
+        article: "{number}"
+        title: "{title}"
+        chapter: "{chapter}"
+        chapter_title: "{chapter_title}"
+
+    recitals:
+      dir: "recitals"
+      filename: "recital-{number}.md"
+      heading: "Recital {number}"
+      frontmatter:
+        type: "recital"
+        recital: "{number}"
+        title: "Recital {number}"
+
+    annexes:
+      dir: "annexes"
+      filename: "annex-{number}.md"
+      heading: "Annex {number} — {title}"
+      frontmatter:
+        type: "annex"
+        annex: "{number}"
+        title: "{title}"
