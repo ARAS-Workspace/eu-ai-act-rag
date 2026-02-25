@@ -13,8 +13,10 @@ name: Build Corpus
 on:
   push:
     branches: [main]
+    paths: ['workflows/**']
   pull_request:
     branches: [main]
+    paths: ['workflows/**']
   workflow_call:
   workflow_dispatch:
 

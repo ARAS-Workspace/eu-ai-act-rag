@@ -11,6 +11,9 @@
 name: Build GDPR Corpus
 
 on:
+  push:
+    branches: [main]
+    paths: ['workflows/**']
   workflow_dispatch:
 
 jobs:

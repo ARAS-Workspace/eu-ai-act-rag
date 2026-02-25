@@ -99,9 +99,9 @@ export const CONFIG = {
 	 * Rate Limiting Configuration
 	 */
 	rateLimit: {
-		requestsPerMinute: 10,
-		requestsPerHour: 100,
-		requestsPerDay: 500,
+		requestsPerMinute: 5,
+		requestsPerHour: 30,
+		requestsPerDay: 100,
 	},
 
 	/**

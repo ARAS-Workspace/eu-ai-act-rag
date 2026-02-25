@@ -155,6 +155,6 @@ curl -X POST https://<worker-domain>/api/v1/chat/completions \
 
 | Pencere | Limit |
 |---------|-------|
-| Dakika  | 10    |
-| Saat    | 100   |
-| Gün     | 500   |
+| Dakika  | 5     |
+| Saat    | 30    |
+| Gün     | 100   |

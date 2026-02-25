@@ -155,6 +155,6 @@ curl -X POST https://<worker-domain>/api/v1/chat/completions \
 
 | Window  | Limit |
 |---------|-------|
-| Minute  | 10    |
-| Hour    | 100   |
-| Day     | 500   |
+| Minute  | 5     |
+| Hour    | 30    |
+| Day     | 100   |
