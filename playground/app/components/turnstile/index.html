@@ -3,7 +3,7 @@
   SPDX-License-Identifier: MIT
   Copyright (C) 2026 Riza Emre ARAS
 
-  Streamlit bi-directional component for Cloudflare Turnstile (Managed mode).
+  Streamlit bi-directional component for Cloudflare Turnstile (Invisible mode).
   Self-configures by fetching site key from /api/config endpoint.
   Communicates with Python via the Streamlit Component postMessage protocol.
 -->
@@ -110,21 +110,19 @@
 
             widgetId = cf.render("#cf-turnstile", {
               sitekey: siteKey,
-              theme: "auto",
+              size: "invisible",
               callback: function (/** @type {string} */ token) {
                 setComponentValue(token);
-                setFrameHeight(0);
               },
               "expired-callback": function () {
                 setComponentValue(null);
-                setFrameHeight(document.body.scrollHeight || 65);
               },
               "error-callback": function () {
                 setComponentValue(null);
               },
             });
 
-            setFrameHeight(document.body.scrollHeight || 65);
+            setFrameHeight(0);
           }
 
           // ── Listen for Streamlit Render Events ────────────────────
@@ -137,7 +135,6 @@
             if (resetCount !== lastResetCount) {
               lastResetCount = resetCount;
               if (widgetId !== null && siteKey) {
-                setFrameHeight(document.body.scrollHeight || 65);
                 /** @type {any} */ (window).turnstile.reset(widgetId);
               }
             }

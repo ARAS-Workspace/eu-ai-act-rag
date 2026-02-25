@@ -312,6 +312,10 @@ if st.session_state["pending"]:
                             "metadata": metadata,
                         }
                     )
+                elif resp.status_code == 403:
+                    st.session_state["messages"].append(
+                        {"role": "assistant", "content": t("errors.turnstileFailed")}
+                    )
                 else:
                     error_data = (
                         resp.json()
@@ -320,11 +324,12 @@ if st.session_state["pending"]:
                         )
                         else {}
                     )
-                    st.error(
-                        error_data.get("error", {}).get(
-                            "message",
-                            f"{t('errors.requestFailed')}: {resp.status_code}",
-                        )
+                    error_msg = error_data.get("error", {}).get(
+                        "message",
+                        f"{t('errors.requestFailed')}: {resp.status_code}",
+                    )
+                    st.session_state["messages"].append(
+                        {"role": "assistant", "content": error_msg}
                     )
 
             except requests.ConnectionError as e:
