@@ -1,5 +1,7 @@
 # EU AI Act RAG
 
+**[Canlı Demo](https://eu-ai-act-rag-playground.aras.tc/)**
+
 ## Pipeline
 
 ```mermaid
