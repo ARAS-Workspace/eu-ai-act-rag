@@ -132,8 +132,8 @@ Configuration in `workflows/eu-ai-act.yaml` under the `validation:` section.
 |------------------|--------------------------------------------|
 | Embedding Model  | `@cf/qwen/qwen3-embedding-0.6b`            |
 | Generation Model | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` |
-| Chunk Size       | 512 tokens                                 |
-| Chunk Overlap    | 10%                                        |
+| Chunk Size       | 384 tokens                                 |
+| Chunk Overlap    | 20%                                        |
 | Vector Store     | Cloudflare Vectorize (1024 dimensions)     |
 | Object Storage   | Cloudflare R2                              |
 

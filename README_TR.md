@@ -132,8 +132,8 @@ Yapılandırma `workflows/eu-ai-act.yaml` dosyasındaki `validation:` bölümün
 |------------------|--------------------------------------------|
 | Embedding Model  | `@cf/qwen/qwen3-embedding-0.6b`            |
 | Generation Model | `@cf/meta/llama-3.3-70b-instruct-fp8-fast` |
-| Chunk Boyutu     | 512 token                                  |
-| Chunk Örtüşme    | %10                                        |
+| Chunk Boyutu     | 384 token                                  |
+| Chunk Örtüşme    | %20                                        |
 | Vektör Deposu    | Cloudflare Vectorize (1024 boyut)          |
 | Nesne Deposu     | Cloudflare R2                              |
 
