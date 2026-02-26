@@ -1,6 +1,15 @@
 # EU AI Act RAG
 
-**[Canlı Demo](https://eu-ai-act-rag-playground.aras.tc/)**
+<div align="center">
+
+[![ARTEK Logo](assets/logo-tr-dark.png#gh-light-mode-only)](https://www.artek.tc)
+[![ARTEK Logo](assets/logo-tr-light.png#gh-dark-mode-only)](https://www.artek.tc)
+
+</div>
+
+**[🚀 Canlı Demo](https://eu-ai-act-rag-playground.aras.tc/)**
+
+**[🔒 Gizlilik Bildirimi](PRIVACY_NOTICE_TR.md)**
 
 ## Pipeline
 
