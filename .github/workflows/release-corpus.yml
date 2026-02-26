@@ -18,9 +18,14 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   build:
     uses: ./.github/workflows/build-corpus.yml
+    permissions:
+      contents: read
 
   release:
     needs: build
@@ -30,7 +35,7 @@ jobs:
 
     steps:
       - name: Download corpus artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: corpus
           path: dist
@@ -39,7 +44,7 @@ jobs:
         run: tar -czf corpus.tar.gz -C dist .
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           tag_name: "v-${{ inputs.version }}"
           name: "v-${{ inputs.version }}"
