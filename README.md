@@ -223,3 +223,7 @@ eu-ai-act-rag/
 MIT License — Copyright (C) 2026 Rıza Emre ARAS, Artek İnovasyon Arge Sanayi ve Ticaret Ltd. Şti.
 
 See [LICENSE](LICENSE) and [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES) for details.
+
+
+
+
