@@ -21,7 +21,11 @@
 		"rewriteQuery": "Sorgu Yeniden Yazımı",
 		"reRanking": "Semantik Yeniden Sıralama",
 		"maxResults": "Maksimum Sonuç",
-		"scoreThreshold": "Puan Eşiği"
+		"scoreThreshold": "Puan Eşiği",
+		"github": "GitHub",
+		"cta": "Şirketiniz için yapay zeka çözümlerine mi ihtiyacınız var?",
+		"copyright": "Rıza Emre ARAS",
+		"copyrightCompany": "Artek İnovasyon Arge Sanayi ve Ticaret Ltd. Şti."
 	},
 	"errors": {
 		"connectionFailed": "Worker'a bağlanılamadı. Çalıştığından emin olun.",

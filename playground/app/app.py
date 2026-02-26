@@ -44,6 +44,9 @@ _turnstile_component = st_components.declare_component(
     path=str(Path(__file__).parent / "components" / "turnstile"),
 )
 
+_assets_dir = Path(__file__).parent / "assets"
+_LOGO_SVG = (_assets_dir / "artek-vertical-current.svg").read_text(encoding="utf-8")
+
 ALLOWED_MODELS = [
     "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
     "@cf/meta/llama-3.1-8b-instruct",
@@ -184,6 +187,8 @@ with header_cols[4]:
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
+    st.markdown(f'<div style="display:flex;justify-content:center;margin-bottom:20px;pointer-events:none">{_LOGO_SVG}</div>', unsafe_allow_html=True)
+
     st.header(t("sidebar.searchOptions"))
 
     so_model = st.selectbox(t("sidebar.model"), options=ALLOWED_MODELS, index=0)
@@ -202,6 +207,19 @@ with st.sidebar:
         max_value=1.0,
         value=0.4,
         step=0.05,
+    )
+
+    st.divider()
+
+    st.markdown(
+        f"[{t('sidebar.cta')}](https://www.artek.tc)"
+    )
+
+    st.caption(f"© 2026 {t('sidebar.copyright')}")
+    st.caption(f"© 2026 {t('sidebar.copyrightCompany')}")
+    st.markdown(
+        "[![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white)]"
+        "(https://github.com/ARAS-Workspace/eu-ai-act-rag)"
     )
 
 

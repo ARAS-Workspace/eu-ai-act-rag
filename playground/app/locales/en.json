@@ -21,7 +21,11 @@
 		"rewriteQuery": "Query Rewriting",
 		"reRanking": "Semantic Reranking",
 		"maxResults": "Max Results",
-		"scoreThreshold": "Score Threshold"
+		"scoreThreshold": "Score Threshold",
+		"github": "GitHub",
+		"cta": "Need AI solutions for your company?",
+		"copyright": "Rıza Emre ARAS",
+		"copyrightCompany": "Artek İnovasyon Arge Sanayi ve Ticaret Ltd. Şti."
 	},
 	"errors": {
 		"connectionFailed": "Failed to connect to the worker. Make sure it is running.",
