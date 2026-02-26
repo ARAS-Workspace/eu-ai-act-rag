@@ -2,14 +2,14 @@
 
 <div align="center">
 
-[![ARTEK Logo](assets/logo-tr-dark.png#gh-light-mode-only)](https://www.artek.tc)
-[![ARTEK Logo](assets/logo-tr-light.png#gh-dark-mode-only)](https://www.artek.tc)
-
-</div>
+![ARTEK Logo](assets/logo-tr-dark.png#gh-light-mode-only)
+![ARTEK Logo](assets/logo-tr-light.png#gh-dark-mode-only)
 
 **[🚀 Canlı Demo](https://eu-ai-act-rag-playground.aras.tc/)**
 
 **[🔒 Gizlilik Bildirimi](PRIVACY_NOTICE_TR.md)**
+
+</div>
 
 ## Pipeline
 
