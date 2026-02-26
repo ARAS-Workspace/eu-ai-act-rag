@@ -209,87 +209,17 @@ eu-ai-act-rag/
 
 ## CI/CD
 
-```mermaid
-flowchart TD
-    subgraph BUILD ["build-corpus.yml — Build Corpus"]
-        direction TB
-        B_TRIGGER["push main / pull_request / workflow_call"]
-        B_CHECKOUT["actions/checkout@v4"]
-        B_PYTHON["actions/setup-python@v5<br/>Python 3.12"]
-        B_DEPS["pip install --require-hashes"]
-        B_RUN["python run.py<br/>--workflow workflows/eu-ai-act.yaml"]
-        B_ARTIFACT["actions/upload-artifact@v4<br/>name: corpus"]
-
-        B_TRIGGER --> B_CHECKOUT --> B_PYTHON --> B_DEPS --> B_RUN --> B_ARTIFACT
-    end
-
-    subgraph DEPLOY_R2 ["deploy-r2.yml — Deploy Corpus R2"]
-        direction TB
-        D_TRIGGER["workflow_dispatch"]
-        D_DOWNLOAD["actions/download-artifact@v4"]
-        D_CLEAR["rclone delete r2:eu-ai-act-rag"]
-        D_UPLOAD["rclone copy corpus/ r2:eu-ai-act-rag"]
-
-        D_TRIGGER --> D_DOWNLOAD --> D_CLEAR --> D_UPLOAD
-    end
-
-    subgraph RELEASE ["release-corpus.yml — Release Corpus"]
-        direction TB
-        R_TRIGGER["workflow_dispatch<br/>input: version"]
-        R_DOWNLOAD["actions/download-artifact@v4"]
-        R_TAR["tar -czf corpus.tar.gz"]
-        R_GH["softprops/action-gh-release@v2<br/>tag: v-{version}"]
-
-        R_TRIGGER --> R_DOWNLOAD --> R_TAR --> R_GH
-    end
-
-    subgraph DEPLOY_WORKER ["deploy-worker.yml — Deploy Worker"]
-        direction TB
-        W_TRIGGER["workflow_dispatch"]
-        W_CHECKOUT["actions/checkout@v4"]
-        W_NODE["actions/setup-node@v4<br/>Node.js 22"]
-        W_ENV["Create .env<br/>CLOUDFLARE_API_TOKEN<br/>CLOUDFLARE_ACCOUNT_ID"]
-        W_INSTALL["npm install"]
-        W_TYPEGEN["npm run cf-typegen"]
-        W_DEPLOY["npm run deploy"]
-
-        W_TRIGGER --> W_CHECKOUT --> W_NODE --> W_ENV --> W_INSTALL --> W_TYPEGEN --> W_DEPLOY
-    end
-
-    subgraph DEPLOY_PLAYGROUND ["deploy-playground.yml — Deploy Playground"]
-        direction TB
-        P_TRIGGER["workflow_dispatch"]
-        P_CHECKOUT["actions/checkout@v4"]
-        P_NODE["actions/setup-node@v4<br/>Node.js 22"]
-        P_DOCKER["docker/setup-buildx-action@v3<br/>linux/amd64"]
-        P_ENV["Create .env<br/>CLOUDFLARE_API_TOKEN<br/>CLOUDFLARE_ACCOUNT_ID"]
-        P_INSTALL["npm install"]
-        P_TYPEGEN["npm run cf-typegen"]
-        P_DEPLOY["npm run deploy"]
-
-        P_TRIGGER --> P_CHECKOUT --> P_NODE --> P_DOCKER --> P_ENV --> P_INSTALL --> P_TYPEGEN --> P_DEPLOY
-    end
-
-    BUILD -->|"corpus artifact"| DEPLOY_R2
-    BUILD -->|"corpus artifact"| RELEASE
-
-    style BUILD fill:#1a1a2e,stroke:#e94560,color:#fff
-    style DEPLOY_R2 fill:#1a1a2e,stroke:#0f3460,color:#fff
-    style RELEASE fill:#1a1a2e,stroke:#1a8a42,color:#fff
-    style DEPLOY_WORKER fill:#1a1a2e,stroke:#f5a623,color:#fff
-    style DEPLOY_PLAYGROUND fill:#1a1a2e,stroke:#7b68ee,color:#fff
-```
-
-| Workflow                 | Tetikleyici                | Runner        | Çıktı                  |
-|--------------------------|----------------------------|---------------|------------------------|
-| `build-corpus.yml`       | push, pull_request, manual | ubuntu-latest | corpus artifact        |
-| `deploy-r2.yml`          | manual                     | self-hosted   | R2 bucket yüklemesi    |
-| `deploy-worker.yml`      | manual                     | self-hosted   | Cloudflare Worker      |
-| `deploy-playground.yml`  | manual                     | self-hosted   | Cloudflare Container   |
-| `release-corpus.yml`     | manual (version input)     | ubuntu-latest | GitHub Release v-x.y.z |
+| Workflow                  | Tetikleyici                            | Runner        | Çıktı                  |
+|---------------------------|----------------------------------------|---------------|------------------------|
+| `build-corpus.yml`        | `workflows/**` push/PR, manuel         | ubuntu-latest | corpus artifact        |
+| `build-gdpr-corpus.yml`   | `workflows/**` push, manuel            | ubuntu-latest | gdpr-corpus artifact   |
+| `deploy-r2.yml`           | manuel                                 | self-hosted   | R2 bucket yüklemesi    |
+| `deploy-worker.yml`       | `worker/**` push, manuel               | self-hosted   | Cloudflare Worker      |
+| `deploy-playground.yml`   | `playground/**` push, manuel           | self-hosted   | Cloudflare Container   |
+| `release-corpus.yml`      | manuel (version input)                 | ubuntu-latest | GitHub Release v-x.y.z |
 
 ## Lisans
 
-MIT Lisansı — Telif Hakkı (C) 2026 Rıza Emre ARAS
+MIT Lisansı — Telif Hakkı (C) 2026 Rıza Emre ARAS, Artek İnovasyon Arge Sanayi ve Ticaret Ltd. Şti.
 
 Ayrıntılar için [LICENSE](LICENSE) ve [THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES) dosyalarına bakınız.
