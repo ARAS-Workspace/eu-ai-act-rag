@@ -218,17 +218,6 @@ eu-ai-act-rag/
 └── dist/                           # Çıktı (gitignore)
 ```
 
-## CI/CD
-
-| Workflow                  | Tetikleyici                            | Runner        | Çıktı                  |
-|---------------------------|----------------------------------------|---------------|------------------------|
-| `build-corpus.yml`        | `workflows/**` push/PR, manuel         | ubuntu-latest | corpus artifact        |
-| `build-gdpr-corpus.yml`   | `workflows/**` push, manuel            | ubuntu-latest | gdpr-corpus artifact   |
-| `deploy-r2.yml`           | manuel                                 | self-hosted   | R2 bucket yüklemesi    |
-| `deploy-worker.yml`       | `worker/**` push, manuel               | self-hosted   | Cloudflare Worker      |
-| `deploy-playground.yml`   | `playground/**` push, manuel           | self-hosted   | Cloudflare Container   |
-| `release-corpus.yml`      | manuel (version input)                 | ubuntu-latest | GitHub Release v-x.y.z |
-
 ## Lisans
 
 MIT Lisansı — Telif Hakkı (C) 2026 Rıza Emre ARAS, Artek İnovasyon Arge Sanayi ve Ticaret Ltd. Şti.
