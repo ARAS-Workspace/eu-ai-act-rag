@@ -5,6 +5,8 @@
 ![ARTEK Logo](assets/logo-tr-dark.png#gh-light-mode-only)
 ![ARTEK Logo](assets/logo-tr-light.png#gh-dark-mode-only)
 
+Regulation (EU) 2024/1689 Avrupa Yapay Zeka Regülasyonunu Temelli Tam Donanımlı RAG Pipeline Örneği
+
 **[🚀 Canlı Demo](https://eu-ai-act-rag-playground.aras.tc/)**
 
 **[🔒 Gizlilik Bildirimi](PRIVACY_NOTICE_TR.md)**

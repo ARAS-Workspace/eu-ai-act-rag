@@ -5,6 +5,8 @@
 ![ARTEK Logo](assets/logo-en-dark.png#gh-light-mode-only)
 ![ARTEK Logo](assets/logo-en-light.png#gh-dark-mode-only)
 
+A Full-Featured RAG Pipeline Example Based on Regulation (EU) 2024/1689 — The European AI Act
+
 **[🚀 Live Demo](https://eu-ai-act-rag-playground.aras.tc/)**
 
 **[🔒 Privacy Notice](PRIVACY_NOTICE.md)**
